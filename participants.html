@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Print Piagam</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-brand">PiagamFast</div>
+            <nav class="sidebar-nav">
+                <a href="index.html" id="nav-index">Dashboard</a>
+                <a href="participants.html" id="nav-participants">Data Peserta</a>
+                <a href="import.html" id="nav-import">Import</a>
+                <a href="queue.html" id="nav-queue">Antrean</a>
+                <a href="setting.html" id="nav-setting">Setting</a>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <div class="container">
+                <div id="toast" class="toast"></div>
+
+<div class="row">
+    <div class="col-60">
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2>Database Peserta</h2>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <input type="text" id="search-input" placeholder="Cari nama..." style="padding:5px; border:1px solid #ccc; border-radius:4px;">
+                    <button type="button" id="btn-clear-all" class="btn btn-danger btn-sm">🗑️ Hapus Semua</button>
+                </div>
+            </div>
+            <p style="font-size:12px; color:#666;">Data master peserta. Terhubung secara real-time via Firebase.</p>
+            
+            <table style="width:100%; border-collapse:collapse; margin-top:15px; font-size:14px;">
+                <thead>
+                    <tr style="background:#f8f9fa; text-align:left;">
+                        <th style="padding:10px; border-bottom:2px solid #ddd;">#</th>
+                        <th style="padding:10px; border-bottom:2px solid #ddd;">Nama Peserta</th>
+                        <th style="padding:10px; border-bottom:2px solid #ddd; text-align:center;">Status Print</th>
+                        <th style="padding:10px; border-bottom:2px solid #ddd; text-align:right;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="participants-tbody">
+                    <tr>
+                        <td colspan="4" style="padding:20px; text-align:center; color:#999;">Memuat data dari Firebase...</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
+                <span id="page-info" style="font-size:14px;"></span>
+                <div id="pagination-controls" style="display:flex; gap:5px;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-40">
+        <div class="card">
+            <h3>Tambah Peserta Manual</h3>
+            <form id="add-participant-form" onsubmit="return false;">
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" id="new_name" required autocomplete="off">
+                </div>
+                <button type="submit" id="btn-add" class="btn btn-primary" style="width:100%;">Tambah Peserta</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+            </div>
+        </main>
+    </div>
+    <script type="module" src="js/firebase-init.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        const path = window.location.pathname;
+        if(path.endsWith('participants.html')) document.getElementById('nav-participants').classList.add('active');
+        else if(path.endsWith('import.html')) document.getElementById('nav-import').classList.add('active');
+        else if(path.endsWith('queue.html')) document.getElementById('nav-queue').classList.add('active');
+        else if(path.endsWith('setting.html')) document.getElementById('nav-setting').classList.add('active');
+        else document.getElementById('nav-index').classList.add('active');
+    </script>
+<script>
+(() => {
+let allParticipants = [];
+let queuesData = [];
+let currentPage = 1;
+let itemsPerPage = 50;
+let searchQuery = '';
+
+function renderTable() {
+    const tbody = document.getElementById('participants-tbody');
+    let filtered = allParticipants;
+    if (searchQuery) {
+        const lower = searchQuery.toLowerCase();
+        filtered = filtered.filter(p => p.name.toLowerCase().includes(lower));
+    }
+    
+    const totalItems = filtered.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    const paged = filtered.slice(startIdx, startIdx + itemsPerPage);
+    
+    let html = '';
+    if (paged.length === 0) {
+        html = '<tr><td colspan="4" style="padding:20px; text-align:center; color:#999;">Data peserta tidak ditemukan.</td></tr>';
+    } else {
+        paged.forEach((p, idx) => {
+            // Cek Status
+            const itemQueues = queuesData.filter(q => q.participant_name === p.name);
+            let status = 'Belum Antre';
+            if(itemQueues.some(q => q.status === 'pending')) status = 'Di Antrean';
+            else if(itemQueues.some(q => q.status === 'printed')) status = 'Sudah Dicetak';
+            
+            let badgeColor = status === 'Di Antrean' ? '#f39c12' : (status === 'Sudah Dicetak' ? '#27ae60' : '#bdc3c7');
+            let badgeHtml = `<span class="badge" style="background:${badgeColor}; color:#fff; font-size:11px;">${status}</span>`;
+            
+            html += `
+            <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:10px;">${startIdx + idx + 1}</td>
+                <td style="padding:10px;">
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="edit_name_${p.id}" value="${escapeHTML(p.name)}" style="width:100%; border:1px solid transparent; background:transparent; padding:2px 5px;" onfocus="this.style.border='1px solid #3498db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';" oninput="document.getElementById('btn_save_${p.id}').style.display='inline-block'">
+                        <button id="btn_save_${p.id}" class="btn btn-primary btn-sm" style="display:none;" onclick="updateParticipant('${p.id}')">Simpan</button>
+                    </div>
+                </td>
+                <td style="padding:10px; text-align:center;">${badgeHtml}</td>
+                <td style="padding:10px; text-align:right;">
+                    <button class="btn btn-danger btn-sm" onclick="deleteParticipant('${p.id}')">Hapus</button>
+                </td>
+            </tr>`;
+        });
+    }
+    tbody.innerHTML = html;
+    
+    // Pagination Info
+    document.getElementById('page-info').innerText = `Menampilkan ${startIdx + 1} - ${Math.min(startIdx + itemsPerPage, totalItems)} dari ${totalItems} baris`;
+    
+    // Pagination Controls
+    let pagesHtml = '';
+    if(currentPage > 1) pagesHtml += `<button onclick="currentPage--; renderTable()">Prev</button>`;
+    if(currentPage < totalPages) pagesHtml += `<button onclick="currentPage++; renderTable()">Next</button>`;
+    document.getElementById('pagination-controls').innerHTML = pagesHtml;
+}
+
+// Firebase Listeners
+const checkFb = setInterval(() => {
+    if(window.fbDb) {
+        clearInterval(checkFb);
+        window.fbOnValue(window.fbRef(window.fbDb, 'participants'), (snapshot) => {
+            const data = snapshot.val();
+            // Urutkan dari yang terbaru (anggap id ter-push terbaru)
+            allParticipants = data ? Object.keys(data).map(k => ({id: k, ...data[k]})).reverse() : [];
+            renderTable();
+        });
+        window.fbOnValue(window.fbRef(window.fbDb, 'queue'), (snapshot) => {
+            const data = snapshot.val();
+            queuesData = data ? Object.keys(data).map(k => ({id: k, ...data[k]})) : [];
+            renderTable();
+        });
+    }
+}, 50);
+
+// Search
+document.getElementById('search-input').addEventListener('input', (e) => {
+    searchQuery = e.target.value;
+    currentPage = 1;
+    renderTable();
+});
+
+// Add
+document.getElementById('btn-add').addEventListener('click', async () => {
+    const name = document.getElementById('new_name').value.trim();
+    if(!name) return;
+    
+    // Check duplicate
+    if(allParticipants.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+        alert('Peserta ini sudah ada di database.');
+        return;
+    }
+    
+    await window.fbPush(window.fbRef(window.fbDb, 'participants'), {
+        name: name,
+        timestamp: Date.now()
+    });
+    document.getElementById('add-participant-form').reset();
+    showToast('Peserta ditambahkan');
+});
+
+// Update
+window.updateParticipant = async (id) => {
+    const newName = document.getElementById(`edit_name_${id}`).value.trim();
+    if(!newName) return;
+    await window.fbUpdate(window.fbRef(window.fbDb, `participants/${id}`), { name: newName });
+    showToast('Nama diperbarui');
+};
+
+// Delete
+window.deleteParticipant = async (id) => {
+    if(confirm('Yakin hapus peserta ini?')) {
+        await window.fbRemove(window.fbRef(window.fbDb, `participants/${id}`));
+        showToast('Peserta dihapus');
+    }
+};
+
+// Clear All
+document.getElementById('btn-clear-all').addEventListener('click', async () => {
+    if(confirm('PERINGATAN: Yakin hapus SEMUA data peserta?')) {
+        await window.fbRemove(window.fbRef(window.fbDb, 'participants'));
+        showToast('Semua dihapus');
+    }
+});
+})();
+</script>
+</body>
+</html>

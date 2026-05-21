@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Print Piagam</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-brand">PiagamFast</div>
+            <nav class="sidebar-nav">
+                <a href="index.html" id="nav-index">Dashboard</a>
+                <a href="participants.html" id="nav-participants">Data Peserta</a>
+                <a href="import.html" id="nav-import">Import</a>
+                <a href="queue.html" id="nav-queue">Antrean</a>
+                <a href="setting.html" id="nav-setting">Setting</a>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <div class="container">
+
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>Daftar Antrean Print (Pending)</h2>
+        <div>
+            <button onclick="window.open('batch.html', '_blank')" class="btn btn-primary">Cetak Masal Semua</button>
+            <button onclick="clearQueue()" class="btn btn-danger">Hapus Semua</button>
+        </div>
+    </div>
+    <table class="table mt-2">
+        <thead>
+            <tr>
+                <th>Nama</th>
+                <th>Juara</th>
+                <th style="text-align:right;">Aksi</th>
+            </tr>
+        </thead>
+        <tbody id="pending-tbody">
+            <tr><td colspan="3" style="text-align:center;">Memuat antrean dari Firebase...</td></tr>
+        </tbody>
+    </table>
+    <div class="mt-2">
+        <button onclick="markAllPrinted()" class="btn btn-secondary">Tandai Semua Sudah Di-Print</button>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>Riwayat Cetak (Sudah Di-Print)</h2>
+    </div>
+    <table class="table mt-2">
+        <thead>
+            <tr>
+                <th>Nama</th>
+                <th>Juara</th>
+                <th style="text-align:right;">Aksi</th>
+            </tr>
+        </thead>
+        <tbody id="printed-tbody">
+            <tr><td colspan="3" style="text-align:center;">Memuat riwayat dari Firebase...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+            </div>
+        </main>
+    </div>
+    <script type="module" src="js/firebase-init.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        const path = window.location.pathname;
+        if(path.endsWith('participants.html')) document.getElementById('nav-participants').classList.add('active');
+        else if(path.endsWith('import.html')) document.getElementById('nav-import').classList.add('active');
+        else if(path.endsWith('queue.html')) document.getElementById('nav-queue').classList.add('active');
+        else if(path.endsWith('setting.html')) document.getElementById('nav-setting').classList.add('active');
+        else document.getElementById('nav-index').classList.add('active');
+    </script>
+<script>
+(() => {
+let queuesData = [];
+
+const checkFb = setInterval(() => {
+    if(window.fbDb) {
+        clearInterval(checkFb);
+        window.fbOnValue(window.fbRef(window.fbDb, 'queue'), (snapshot) => {
+            const data = snapshot.val();
+            queuesData = data ? Object.keys(data).map(k => ({id: k, ...data[k]})) : [];
+            queuesData.sort((a,b) => b.timestamp - a.timestamp);
+            renderQueues();
+        });
+    }
+}, 50);
+
+function renderQueues() {
+    const pending = queuesData.filter(q => q.status === 'pending');
+    const printed = queuesData.filter(q => q.status === 'printed');
+    
+    const pendingHtml = pending.length ? pending.map(q => `
+        <tr id="queue-${q.id}">
+            <td>${escapeHTML(q.participant_name)}</td>
+            <td>${escapeHTML(q.category)}</td>
+            <td style="text-align:right;">
+                <button onclick="window.open('batch.html?id=${q.id}', '_blank')" class="btn btn-primary btn-sm">Print</button>
+                <button onclick="deleteQueue('${q.id}')" class="btn btn-danger btn-sm">Hapus</button>
+            </td>
+        </tr>
+    `).join('') : '<tr><td colspan="3" style="text-align:center; color:#999;">Antrean kosong.</td></tr>';
+    
+    const printedHtml = printed.length ? printed.map(q => `
+        <tr id="queue-${q.id}">
+            <td>${escapeHTML(q.participant_name)}</td>
+            <td>${escapeHTML(q.category)}</td>
+            <td style="text-align:right;">
+                <button onclick="window.open('batch.html?id=${q.id}', '_blank')" class="btn btn-primary btn-sm">Print Ulang</button>
+                <button onclick="rollbackQueue('${q.id}')" class="btn btn-warning btn-sm">Rollback</button>
+                <button onclick="deleteQueue('${q.id}')" class="btn btn-danger btn-sm">Hapus</button>
+            </td>
+        </tr>
+    `).join('') : '<tr><td colspan="3" style="text-align:center; color:#999;">Belum ada riwayat.</td></tr>';
+    
+    document.getElementById('pending-tbody').innerHTML = pendingHtml;
+    document.getElementById('printed-tbody').innerHTML = printedHtml;
+}
+
+window.deleteQueue = async function deleteQueue(id) {
+    if(!confirm('Hapus dari daftar?')) return;
+    await window.fbRemove(window.fbRef(window.fbDb, `queue/${id}`));
+}
+
+window.clearQueue = async function clearQueue() {
+    if(!confirm('Bersihkan SEMUA antrean pending?')) return;
+    const pending = queuesData.filter(q => q.status === 'pending');
+    const updates = {};
+    pending.forEach(q => updates[q.id] = null);
+    await window.fbUpdate(window.fbRef(window.fbDb, 'queue'), updates);
+}
+
+window.markAllPrinted = async function markAllPrinted() {
+    const pending = queuesData.filter(q => q.status === 'pending');
+    if(pending.length === 0) return;
+    if(!confirm('Tandai semua sebagai sudah dicetak?')) return;
+    
+    const updates = {};
+    pending.forEach(q => updates[q.id + '/status'] = 'printed');
+    await window.fbUpdate(window.fbRef(window.fbDb, 'queue'), updates);
+}
+
+window.rollbackQueue = async function rollbackQueue(id) {
+    if(!confirm('Kembalikan data ini ke antrean (belum diprint)?')) return;
+    await window.fbUpdate(window.fbRef(window.fbDb, `queue/${id}`), { status: 'pending', timestamp: Date.now() });
+}
+})();
+</script>
+</body>
+</html>

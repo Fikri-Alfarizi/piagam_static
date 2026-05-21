@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Batch Print Piagam</title>
+    <link rel="stylesheet" href="css/print.css">
+    <script type="module" src="js/firebase-init.js"></script>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                background: transparent;
+                -webkit-print-color-adjust: exact;
+            }
+            .print-wrapper {
+                page-break-after: always;
+                page-break-inside: avoid;
+            }
+            .print-wrapper:last-child {
+                page-break-after: auto;
+            }
+            .print-page {
+                width: 1123px;
+                height: 794px;
+                position: relative;
+                overflow: hidden;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+        
+        /* Layout for Browser Preview (2 columns) */
+        @media screen {
+            body {
+                background: #525659;
+            }
+            #page-container {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(505px, 1fr));
+                gap: 30px;
+                padding: 30px;
+                max-width: 1100px;
+                margin: 0 auto;
+            }
+            .print-wrapper {
+                width: 505px;
+                height: 357px;
+                background: white;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+                overflow: hidden;
+            }
+            .print-page {
+                transform: scale(0.45);
+                transform-origin: top left;
+                width: 1123px;
+                height: 794px;
+                position: relative;
+                background: white no-repeat center center;
+                background-size: 100% 100%;
+            }
+        }
+
+        .field-name, .field-category {
+            position: absolute;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="padding: 20px; background: #eee; text-align: center;">
+        <button onclick="window.print()" style="padding:10px 20px; font-size:18px; cursor:pointer;">Mulai Print</button>
+        <p>Pastikan pengaturan printer: Landscape, Margins: None, Paper: A4, Background Graphics: Off</p>
+    </div>
+    
+    <div id="page-container">
+        <p style="color:white; text-align:center; width:100%;">Memuat antrean dari Firebase...</p>
+    </div>
+
+    <script>
+    function escapeHTML(str) {
+        if (!str) return '';
+        return str.toString().replace(/[&<>'"]/g, tag => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+        }[tag] || tag));
+    }
+
+    const loadedFonts = new Set();
+    function loadGoogleFont(fontFamily) {
+        if (!fontFamily || fontFamily === 'Arial' || loadedFonts.has(fontFamily)) return;
+        const link = document.createElement('link');
+        link.href = 'https://fonts.googleapis.com/css2?family=' + fontFamily.replace(/ /g, '+') + '&display=swap';
+        link.rel = 'stylesheet';
+        document.head.appendChild(link);
+        loadedFonts.add(fontFamily);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Wait until firebase-init is loaded and attached to window
+        const checkFb = setInterval(async () => {
+            if(window.fbDb) {
+                clearInterval(checkFb);
+                
+                // Get Settings first
+                let settings = {};
+                const snapSettings = await window.fbGet(window.fbRef(window.fbDb, 'settings/print'));
+                if(snapSettings.val()) settings = snapSettings.val();
+                
+                // Get Background
+                let bgUrl = '';
+                const snapBg = await window.fbGet(window.fbRef(window.fbDb, 'settings/background'));
+                if(snapBg.val()) bgUrl = snapBg.val();
+
+                // Get Queues
+                const snapQueue = await window.fbGet(window.fbRef(window.fbDb, 'queue'));
+                const qData = snapQueue.val();
+                let pending = [];
+                if(qData) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const singleId = urlParams.get('id');
+                    
+                    let allQs = Object.keys(qData).map(k => ({id: k, ...qData[k]}));
+                    if (singleId) {
+                        pending = allQs.filter(q => q.id === singleId);
+                    } else {
+                        pending = allQs.filter(q => q.status === 'pending');
+                        pending.sort((a,b) => a.timestamp - b.timestamp);
+                    }
+                }
+                
+                const container = document.getElementById('page-container');
+                
+                if(pending.length === 0) {
+                    container.innerHTML = '<p style="color:white; text-align:center; width:100%;">Antrean kosong.</p>';
+                    return;
+                }
+                
+                let html = '';
+                pending.forEach(q => {
+                    const nSet = settings.name || { x_pos:0, y_pos:0, font_size:24, align:'center', font_family:'Arial', is_bold:0, color:'#000' };
+                    const cSet = settings.category || { x_pos:0, y_pos:0, font_size:24, align:'center', font_family:'Arial', is_bold:0, color:'#000' };
+                    
+                    loadGoogleFont(nSet.font_family);
+                    loadGoogleFont(cSet.font_family);
+                    
+                    const nStyle = `left:${nSet.x_pos}px; top:${nSet.y_pos}px; font-size:${nSet.font_size}px; text-align:${nSet.align}; font-weight:${nSet.is_bold ? 'bold':'normal'}; color:${nSet.color}; font-family:'${nSet.font_family}', sans-serif;`;
+                    const cStyle = `left:${cSet.x_pos}px; top:${cSet.y_pos}px; font-size:${cSet.font_size}px; text-align:${cSet.align}; font-weight:${cSet.is_bold ? 'bold':'normal'}; color:${cSet.color}; font-family:'${cSet.font_family}', sans-serif;`;
+                    
+                    const pageBgStyle = bgUrl ? `background-image: url('${bgUrl}');` : '';
+
+                    html += `
+                        <div class="print-wrapper">
+                            <div class="print-page" style="${pageBgStyle}">
+                                <div class="field-name" style="${nStyle}">
+                                    ${escapeHTML(q.participant_name)}
+                                </div>
+                                ${q.category ? `<div class="field-category" style="${cStyle}">${escapeHTML(q.category)}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+        }, 100);
+    });
+    </script>
+</body>
+</html>

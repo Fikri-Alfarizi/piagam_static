@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Print Piagam</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-brand">PiagamFast</div>
+            <nav class="sidebar-nav">
+                <a href="index.html" id="nav-index">Dashboard</a>
+                <a href="participants.html" id="nav-participants">Data Peserta</a>
+                <a href="import.html" id="nav-import">Import</a>
+                <a href="queue.html" id="nav-queue">Antrean</a>
+                <a href="setting.html" id="nav-setting">Setting</a>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <div class="container">
+
+<div class="card">
+    <h2 style="margin-bottom: 8px;">Pengaturan Layout Print</h2>
+    <p class="text-muted" style="margin-bottom: 24px;">Geser (drag) teks pada preview atau gunakan form untuk menyesuaikan posisi. Tersimpan ke Firebase.</p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 24px;">
+        <div class="p-3" style="border:1px solid var(--border); background:var(--secondary); border-radius: var(--radius);">
+            <h4 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Elemen: name</h4>
+            <div style="display:flex; gap:16px; margin-bottom:16px;">
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">X (px)</label>
+                    <input type="number" id="name_x" value="0" oninput="updatePreview('name')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s;">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Y (px)</label>
+                    <input type="number" id="name_y" value="0" oninput="updatePreview('name')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s;">
+                </div>
+            </div>
+            <div style="display:flex; gap:16px; margin-bottom:16px;">
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Size (px)</label>
+                    <input type="number" id="name_size" value="24" oninput="updatePreview('name')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s;">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Align</label>
+                    <select id="name_align" onchange="updatePreview('name')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s; background:#fff;">
+                        <option value="left">Left</option>
+                        <option value="center">Center</option>
+                        <option value="right">Right</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex; gap:16px; margin-bottom:16px;">
+                <div style="flex:2;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Font</label>
+                    <select id="name_font" onchange="updatePreview('name')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s; background:#fff; font-size: 16px;">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Warna</label>
+                    <input type="color" id="name_color" value="#000000" onchange="updatePreview('name')" style="width:100%; height:36px; padding:2px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s; cursor:pointer;">
+                </div>
+            </div>
+            <div style="display:flex; align-items:center;">
+                <input type="checkbox" id="name_bold" onchange="updatePreview('name')" style="margin:0; margin-right:8px; cursor:pointer;">
+                <label for="name_bold" style="cursor:pointer; font-size:13px; font-weight:600; margin:0;">Tebal (Bold)</label>
+            </div>
+        </div>
+
+        <div class="p-3" style="border:1px solid var(--border); background:var(--secondary); border-radius: var(--radius);">
+            <h4 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Elemen: category</h4>
+            <div style="display:flex; gap:16px; margin-bottom:16px;">
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">X (px)</label>
+                    <input type="number" id="category_x" value="0" oninput="updatePreview('category')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s;">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Y (px)</label>
+                    <input type="number" id="category_y" value="0" oninput="updatePreview('category')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s;">
+                </div>
+            </div>
+            <div style="display:flex; gap:16px; margin-bottom:16px;">
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Size (px)</label>
+                    <input type="number" id="category_size" value="24" oninput="updatePreview('category')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s;">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Align</label>
+                    <select id="category_align" onchange="updatePreview('category')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s; background:#fff;">
+                        <option value="left">Left</option>
+                        <option value="center">Center</option>
+                        <option value="right">Right</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex; gap:16px; margin-bottom:16px;">
+                <div style="flex:2;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Font</label>
+                    <select id="category_font" onchange="updatePreview('category')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s; background:#fff; font-size: 16px;">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Warna</label>
+                    <input type="color" id="category_color" value="#000000" onchange="updatePreview('category')" style="width:100%; height:36px; padding:2px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s; cursor:pointer;">
+                </div>
+            </div>
+            <div style="display:flex; align-items:center;">
+                <input type="checkbox" id="category_bold" onchange="updatePreview('category')" style="margin:0; margin-right:8px; cursor:pointer;">
+                <label for="category_bold" style="cursor:pointer; font-size:13px; font-weight:600; margin:0;">Tebal (Bold)</label>
+            </div>
+        </div>
+    </div>
+    
+    <button class="btn btn-primary" onclick="saveSettings()" style="width:100%; padding:14px; font-weight:bold; font-size: 15px;">Simpan Permanen ke Firebase</button>
+    <div id="save-status" style="text-align:center; color:var(--primary); margin-top:12px; font-weight:600; height:20px;"></div>
+
+    <div style="flex-grow: 1; min-width: 0; border: 1px solid var(--border); border-radius: var(--radius); background: #f0f0f0; display: flex; flex-direction: column; overflow: hidden; margin-top: 24px;">
+        <div style="padding: 16px; border-bottom: 1px solid var(--border); background: #fff; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <p style="font-size: 13px; color: #666; margin: 0;">💡 <b>Tips</b>: Anda bisa klik dan geser langsung teks pada preview di bawah.</p>
+                <form id="bg-form" onsubmit="return false;" style="display: flex; gap: 10px; align-items: center;">
+                    <input type="file" id="bg-upload" accept="image/*" required style="font-size: 12px; max-width: 200px;">
+                    <button type="button" onclick="uploadBg()" id="btn-bg" class="btn btn-secondary btn-sm">Set Background ke Firebase</button>
+                </form>
+            </div>
+            
+            <div id="preview-wrapper" style="width: 100%; overflow: hidden; position: relative;">
+                <div id="print-preview-area" style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 1123px; 
+                    height: 794px; 
+                    background: white no-repeat center center; 
+                    background-size: 100% 100%; 
+                    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+                    transform-origin: top left;">
+                    
+                    <div id="preview_name" class="draggable" data-field="name" style="position:absolute; width:100%; cursor:move; border:1px dashed transparent; user-select:none;">
+                        Budi Santoso (Contoh Nama)
+                    </div>
+                    <div id="preview_category" class="draggable" data-field="category" style="position:absolute; width:100%; cursor:move; border:1px dashed transparent; user-select:none;">
+                        Juara 1 Kumite Bebas -55kg
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.draggable { transition: border 0.1s, background 0.1s; padding: 2px; }
+.draggable:hover, .draggable.dragging { 
+    border: 1px dashed #3498db !important; 
+    background: rgba(52,152,219,0.1); 
+    z-index: 10;
+}
+</style>
+
+            </div>
+        </main>
+    </div>
+    <script type="module" src="js/firebase-init.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        const path = window.location.pathname;
+        if(path.endsWith('participants.html')) document.getElementById('nav-participants').classList.add('active');
+        else if(path.endsWith('import.html')) document.getElementById('nav-import').classList.add('active');
+        else if(path.endsWith('queue.html')) document.getElementById('nav-queue').classList.add('active');
+        else if(path.endsWith('setting.html')) document.getElementById('nav-setting').classList.add('active');
+        else document.getElementById('nav-index').classList.add('active');
+    </script>
+<script>
+const fonts = [
+    'Arial', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Inter', 'Noto Sans', 
+    'Ubuntu', 'Mukta', 'PT Sans', 'Nunito', 'Rubik', 'Work Sans', 'Fira Sans', 'Quicksand',
+    'Merriweather', 'Playfair Display', 'Lora', 'PT Serif', 'Noto Serif', 'Libre Baskerville', 
+    'EB Garamond', 'Cormorant Garamond', 'Crimson Text', 'Bebas Neue', 'Oswald', 'Anton', 
+    'Pacifico', 'Dancing Script', 'Caveat', 'Satisfy', 'Great Vibes', 'Lobster', 
+    'Shadows Into Light', 'Cinzel'
+];
+
+// Inject Font Link
+const googleFonts = fonts.filter(f => f !== 'Arial').map(f => 'family=' + f.replace(/ /g, '+')).join('&');
+const link = document.createElement('link');
+link.href = 'https://fonts.googleapis.com/css2?' + googleFonts + '&display=swap';
+link.rel = 'stylesheet';
+document.head.appendChild(link);
+
+// Populate selects
+let optionsHtml = '';
+fonts.forEach(f => {
+    optionsHtml += `<option value="${f}" style="font-family: '${f}', sans-serif; font-size: 18px;">${f}</option>`;
+});
+document.getElementById('name_font').innerHTML = optionsHtml;
+document.getElementById('category_font').innerHTML = optionsHtml;
+
+const loadedFonts = new Set();
+let currentScale = 1;
+let isLoaded = false;
+
+function updatePreview(field) {
+    const el = document.getElementById('preview_' + field);
+    if (!el) return;
+    el.style.left = document.getElementById(field + '_x').value + 'px';
+    el.style.top = document.getElementById(field + '_y').value + 'px';
+    el.style.fontSize = document.getElementById(field + '_size').value + 'px';
+    el.style.textAlign = document.getElementById(field + '_align').value;
+    el.style.fontWeight = document.getElementById(field + '_bold').checked ? 'bold' : 'normal';
+    
+    const font = document.getElementById(field + '_font').value;
+    el.style.fontFamily = font;
+
+    const color = document.getElementById(field + '_color').value;
+    el.style.color = color;
+}
+
+// Load dari Firebase
+const checkFb = setInterval(() => {
+    if(window.fbDb) {
+        clearInterval(checkFb);
+        window.fbOnValue(window.fbRef(window.fbDb, 'settings/print'), (snapshot) => {
+            const data = snapshot.val();
+            if(data) {
+                ['name', 'category'].forEach(f => {
+                    if(data[f]) {
+                        document.getElementById(f+'_x').value = data[f].x_pos || 0;
+                        document.getElementById(f+'_y').value = data[f].y_pos || 0;
+                        document.getElementById(f+'_size').value = data[f].font_size || 24;
+                        document.getElementById(f+'_align').value = data[f].align || 'center';
+                        document.getElementById(f+'_font').value = data[f].font_family || 'Arial';
+                        document.getElementById(f+'_color').value = data[f].color || '#000000';
+                        document.getElementById(f+'_bold').checked = data[f].is_bold ? true : false;
+                        updatePreview(f);
+                    }
+                });
+            }
+        });
+        window.fbOnValue(window.fbRef(window.fbDb, 'settings/background'), (snapshot) => {
+            const bg = snapshot.val();
+            if(bg) {
+                document.getElementById('print-preview-area').style.backgroundImage = `url('${bg}')`;
+            }
+        });
+    }
+}, 50);
+
+function fitPreviewToScreen() {
+    const wrapper = document.getElementById('preview-wrapper');
+    const preview = document.getElementById('print-preview-area');
+    const availableWidth = wrapper.clientWidth; 
+    const a4Width = 1123; 
+    const a4Height = 794;
+    currentScale = Math.min(1, availableWidth / a4Width);
+    preview.style.transform = `scale(${currentScale})`;
+    wrapper.style.height = (a4Height * currentScale) + 'px'; 
+}
+
+fitPreviewToScreen();
+window.addEventListener('resize', fitPreviewToScreen);
+
+async function saveSettings() {
+    const data = {};
+    ['name', 'category'].forEach(f => {
+        data[f] = {
+            x_pos: document.getElementById(f+'_x').value,
+            y_pos: document.getElementById(f+'_y').value,
+            font_size: document.getElementById(f+'_size').value,
+            align: document.getElementById(f+'_align').value,
+            font_family: document.getElementById(f+'_font').value,
+            color: document.getElementById(f+'_color').value,
+            is_bold: document.getElementById(f+'_bold').checked ? 1 : 0
+        };
+    });
+    
+    await window.fbSet(window.fbRef(window.fbDb, 'settings/print'), data);
+    document.getElementById('save-status').innerText = '✅ Tersimpan ke Firebase!';
+    setTimeout(() => document.getElementById('save-status').innerText = '', 2000);
+}
+
+async function uploadBg() {
+    const fileInput = document.getElementById('bg-upload');
+    const file = fileInput.files[0];
+    if(!file) return alert('Pilih file gambar dulu');
+    
+    const btn = document.getElementById('btn-bg');
+    btn.innerHTML = '⏳ Uploading...';
+    btn.disabled = true;
+    
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const base64 = e.target.result;
+        try {
+            await window.fbSet(window.fbRef(window.fbDb, 'settings/background'), base64);
+            alert('Background berhasil diunggah dan tersimpan di Firebase!');
+        } catch(err) {
+            alert('Gagal mengunggah: Pastikan ukuran gambar tidak terlalu besar (Maks ~1MB untuk Realtime DB).');
+        }
+        btn.innerHTML = 'Set Background ke Firebase';
+        btn.disabled = false;
+    };
+    reader.readAsDataURL(file);
+}
+
+// Drag logic
+let isDragging = false;
+let currentEl = null;
+let startY, startX, initialTop, initialLeft;
+
+document.querySelectorAll('.draggable').forEach(el => {
+    el.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        currentEl = this;
+        currentEl.classList.add('dragging');
+        startY = e.clientY;
+        startX = e.clientX;
+        initialTop = parseInt(window.getComputedStyle(this).top) || 0;
+        initialLeft = parseInt(window.getComputedStyle(this).left) || 0;
+        e.preventDefault(); 
+    });
+});
+
+document.addEventListener('mousemove', function(e) {
+    if (isDragging && currentEl) {
+        let dy = (e.clientY - startY) / currentScale;
+        let dx = (e.clientX - startX) / currentScale;
+        let newTop = Math.round(initialTop + dy);
+        let newLeft = Math.round(initialLeft + dx);
+        
+        currentEl.style.top = newTop + 'px';
+        currentEl.style.left = newLeft + 'px';
+        
+        const field = currentEl.getAttribute('data-field');
+        document.getElementById(field + '_y').value = newTop;
+        document.getElementById(field + '_x').value = newLeft;
+    }
+});
+
+document.addEventListener('mouseup', function() {
+    if(isDragging && currentEl) {
+        currentEl.classList.remove('dragging');
+        isDragging = false;
+        currentEl = null;
+    }   
+});
+</script>
+</body>
+</html>

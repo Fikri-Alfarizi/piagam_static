@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Print Piagam</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Serverless Extractors -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-brand">PiagamFast</div>
+            <nav class="sidebar-nav">
+                <a href="index.html" id="nav-index">Dashboard</a>
+                <a href="participants.html" id="nav-participants">Data Peserta</a>
+                <a href="import.html" id="nav-import">Import</a>
+                <a href="queue.html" id="nav-queue">Antrean</a>
+                <a href="setting.html" id="nav-setting">Setting</a>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <div class="container">
+
+<div class="card">
+    <h2 style="margin-bottom:8px;">Smart Import (Ekstrak Nama Serverless)</h2>
+    <p class="text-muted">Upload file (.pdf, .xlsx, .csv, .txt) atau <b>Gambar (.png, .jpg)</b>. Seluruh proses pembacaan file dan <b>sistem OCR</b> kini dikerjakan langsung oleh browser Anda tanpa perlu server backend PHP!</p>
+    
+    <div class="form-group" style="display:flex; gap:16px; align-items:center; margin-bottom:24px; padding: 16px; background:var(--secondary); border-radius:var(--radius); border:1px solid var(--border);">
+        <input type="file" id="smartFile" accept=".pdf,.xlsx,.csv,.txt,.png,.jpg,.jpeg" style="flex:1; background:#fff;">
+        <button type="button" class="btn btn-secondary" onclick="scanFile()" id="btnScan">🔍 Scan File</button>
+    </div>
+
+    <form id="importForm" onsubmit="return false;">
+        <div class="form-group">
+            <label>Hasil Ekstraksi Nama (Satu baris satu nama)</label>
+            <textarea id="namesArea" name="names" rows="15" style="width:100%; font-family:monospace; line-height:1.5;" placeholder="Budi Santoso
+Andi Wijaya
+..."></textarea>
+        </div>
+        <button type="submit" id="btnSave" class="btn btn-primary" style="width:100%; padding:14px; font-size:16px;">Simpan Nama ke Database Firebase</button>
+    </form>
+</div>
+
+            </div>
+        </main>
+    </div>
+    <script type="module" src="js/firebase-init.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        const path = window.location.pathname;
+        if(path.endsWith('participants.html')) document.getElementById('nav-participants').classList.add('active');
+        else if(path.endsWith('import.html')) document.getElementById('nav-import').classList.add('active');
+        else if(path.endsWith('queue.html')) document.getElementById('nav-queue').classList.add('active');
+        else if(path.endsWith('setting.html')) document.getElementById('nav-setting').classList.add('active');
+        else document.getElementById('nav-index').classList.add('active');
+    </script>
+<script>
+// Konfigurasi PDFJS
+window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+async function scanFile() {
+    const fileInput = document.getElementById('smartFile');
+    const btn = document.getElementById('btnScan');
+    const area = document.getElementById('namesArea');
+    
+    if(fileInput.files.length === 0) {
+        alert('Pilih file terlebih dahulu!');
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const ext = file.name.split('.').pop().toLowerCase();
+    
+    btn.innerHTML = '⏳ Mengekstrak...';
+    btn.disabled = true;
+
+    try {
+        let extractedText = '';
+
+        if (['png', 'jpg', 'jpeg'].includes(ext)) {
+            // OCR using Tesseract.js
+            btn.innerHTML = '⏳ Menjalankan OCR (Tesseract.js)...';
+            const worker = await Tesseract.createWorker('ind');
+            const ret = await worker.recognize(file);
+            extractedText = ret.data.text;
+            await worker.terminate();
+            
+        } else if (['xlsx', 'csv'].includes(ext)) {
+            // Excel / CSV using SheetJS
+            const buffer = await file.arrayBuffer();
+            const workbook = XLSX.read(buffer, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            // Convert to 2D Array
+            const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+            
+            let nameColIdx = -1;
+            let startRow = 0;
+            
+            // Cari baris header yang mengandung kata 'nama'
+            for (let i = 0; i < Math.min(10, rows.length); i++) {
+                if(!rows[i]) continue;
+                for (let j = 0; j < rows[i].length; j++) {
+                    const cell = String(rows[i][j] || '').toLowerCase();
+                    if (cell.includes('nama')) {
+                        nameColIdx = j;
+                        startRow = i + 1; // Data dimulai setelah header
+                        break;
+                    }
+                }
+                if(nameColIdx !== -1) break;
+            }
+            
+            // Jika tidak ketemu header 'nama', asumsikan kolom pertama (index 0) adalah nama
+            if (nameColIdx === -1) {
+                nameColIdx = 0;
+                startRow = 0;
+            }
+            
+            // Ekstrak hanya nama
+            for (let i = startRow; i < rows.length; i++) {
+                if(rows[i] && rows[i][nameColIdx]) {
+                    extractedText += String(rows[i][nameColIdx]).trim() + '\n';
+                }
+            }
+            
+        } else if (ext === 'txt') {
+            // Plain text
+            extractedText = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.readAsText(file);
+            });
+            
+        } else if (ext === 'pdf') {
+            // PDF using PDF.js
+            const buffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({data: new Uint8Array(buffer)}).promise;
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                extractedText += textContent.items.map(item => item.str).join('\n') + '\n';
+            }
+        } else {
+            throw new Error('Format file tidak didukung.');
+        }
+
+        // Bersihkan teks kosong dan rapikan
+        let cleanText = extractedText.split('\n').map(l => l.trim()).filter(l => l.length > 1).join('\n');
+        
+        if (area.value.trim() !== '') {
+            area.value = area.value.trim() + '\n' + cleanText;
+        } else {
+            area.value = cleanText;
+        }
+        alert('Ekstraksi selesai! Silakan periksa hasilnya di kotak teks.');
+        
+    } catch (e) {
+        console.error(e);
+        alert('Gagal mengekstrak: ' + e.message);
+    }
+
+    btn.innerHTML = '🔍 Scan File';
+    btn.disabled = false;
+    fileInput.value = '';
+}
+
+document.getElementById('importForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnSave');
+    const text = document.getElementById('namesArea').value.trim();
+    if(!text) return;
+    
+    btn.innerHTML = 'Menyimpan ke Firebase...';
+    btn.disabled = true;
+    
+    try {
+        const snap = await window.fbGet(window.fbRef(window.fbDb, 'participants'));
+        const existingData = snap.val() || {};
+        const existingNames = Object.values(existingData).map(p => p.name.toLowerCase());
+        
+        const lines = text.split('\n');
+        const updates = {};
+        let count = 0;
+        let duplicateCount = 0;
+        
+        for(let line of lines) {
+            line = line.trim();
+            if(!line) continue;
+            
+            if(existingNames.includes(line.toLowerCase())) {
+                duplicateCount++;
+                continue;
+            }
+            existingNames.push(line.toLowerCase()); // Cegah duplikat di dalam input teks itu sendiri
+            
+            const newRef = window.fbPush(window.fbRef(window.fbDb, 'participants'));
+            updates[newRef.key] = {
+                name: line,
+                timestamp: Date.now() + count
+            };
+            count++;
+        }
+        
+        if(count > 0) {
+            await window.fbUpdate(window.fbRef(window.fbDb, 'participants'), updates);
+            alert(`${count} peserta berhasil disimpan! ${duplicateCount > 0 ? `(${duplicateCount} data duplikat diabaikan)` : ''}`);
+            document.getElementById('namesArea').value = '';
+        } else {
+            alert(`Tidak ada data baru yang disimpan. ${duplicateCount > 0 ? `(${duplicateCount} data sudah ada di database)` : ''}`);
+        }
+    } catch (e) {
+        alert('Gagal menyimpan ke Firebase.');
+    }
+    
+    btn.innerHTML = 'Simpan Nama ke Database Firebase';
+    btn.disabled = false;
+});
+</script>
+</body>
+</html>
