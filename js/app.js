@@ -181,6 +181,6 @@ document.addEventListener('keydown', function(e) {
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
         e.preventDefault();
-        window.open('/print/batch', '_blank');
+        window.open('batch.html', '_blank');
     }
 });
