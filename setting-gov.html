@@ -23,14 +23,57 @@
             <div class="container">
 
 <div class="card">
-    <h2 style="margin-bottom: 8px;">Pengaturan Layout Print</h2>
+    <h2 style="margin-bottom: 8px;">Pengaturan Layout Print (Pemerintah)</h2>
     <div style="display:flex; gap:10px; margin-bottom: 16px;">
-        <a href="setting.html" class="btn btn-primary">Piagam Biasa</a>
-        <a href="setting-gov.html" class="btn btn-secondary">Piagam Pemerintah</a>
+        <a href="setting.html" class="btn btn-secondary">Piagam Biasa</a>
+        <a href="setting-gov.html" class="btn btn-primary">Piagam Pemerintah</a>
     </div>
     <p class="text-muted" style="margin-bottom: 24px;">Geser (drag) teks pada preview atau gunakan form untuk menyesuaikan posisi. Tersimpan ke Firebase.</p>
     
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 24px;">
+        <div class="p-3" style="border:1px solid var(--border); background:var(--secondary); border-radius: var(--radius);">
+            <h4 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Elemen: nomor</h4>
+            <div style="display:flex; gap:16px; margin-bottom:16px;">
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">X (px)</label>
+                    <input type="number" id="nomor_x" value="0" oninput="updatePreview('nomor')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s;">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Y (px)</label>
+                    <input type="number" id="nomor_y" value="0" oninput="updatePreview('nomor')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s;">
+                </div>
+            </div>
+            <div style="display:flex; gap:16px; margin-bottom:16px;">
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Size (px)</label>
+                    <input type="number" id="nomor_size" value="18" oninput="updatePreview('nomor')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s;">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Align</label>
+                    <select id="nomor_align" onchange="updatePreview('nomor')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s; background:#fff;">
+                        <option value="left">Left</option>
+                        <option value="center">Center</option>
+                        <option value="right">Right</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex; gap:16px; margin-bottom:16px;">
+                <div style="flex:2;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Font</label>
+                    <select id="nomor_font" onchange="updatePreview('nomor')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s; background:#fff; font-size: 16px;">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Warna</label>
+                    <input type="color" id="nomor_color" value="#000000" onchange="updatePreview('nomor')" style="width:100%; height:36px; padding:2px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s; cursor:pointer;">
+                </div>
+            </div>
+            <div style="display:flex; align-items:center;">
+                <input type="checkbox" id="nomor_bold" onchange="updatePreview('nomor')" style="margin:0; margin-right:8px; cursor:pointer;">
+                <label for="nomor_bold" style="cursor:pointer; font-size:13px; font-weight:600; margin:0;">Tebal (Bold)</label>
+            </div>
+        </div>
         <div class="p-3" style="border:1px solid var(--border); background:var(--secondary); border-radius: var(--radius);">
             <h4 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Elemen: name</h4>
             <div style="display:flex; gap:16px; margin-bottom:16px;">
@@ -144,6 +187,9 @@
                     box-shadow: 0 0 10px rgba(0,0,0,0.2);
                     transform-origin: top left;">
                     
+                    <div id="preview_nomor" class="draggable" data-field="nomor" style="position:absolute; width:100%; cursor:move; border:1px dashed transparent; user-select:none;">
+                        Nomor: 299 /O2SN KAB.BANDUNG...
+                    </div>
                     <div id="preview_name" class="draggable" data-field="name" style="position:absolute; width:100%; cursor:move; border:1px dashed transparent; user-select:none;">
                         Budi Santoso (Contoh Nama)
                     </div>
@@ -202,6 +248,7 @@ fonts.forEach(f => {
 });
 document.getElementById('name_font').innerHTML = optionsHtml;
 document.getElementById('category_font').innerHTML = optionsHtml;
+document.getElementById('nomor_font').innerHTML = optionsHtml;
 
 const loadedFonts = new Set();
 let currentScale = 1;
@@ -227,10 +274,10 @@ function updatePreview(field) {
 const checkFb = setInterval(() => {
     if(window.fbDb) {
         clearInterval(checkFb);
-        window.fbOnValue(window.fbRef(window.fbDb, 'settings/print'), (snapshot) => {
+        window.fbOnValue(window.fbRef(window.fbDb, 'settings/print_gov'), (snapshot) => {
             const data = snapshot.val();
             if(data) {
-                ['name', 'category'].forEach(f => {
+                ['nomor', 'name', 'category'].forEach(f => {
                     if(data[f]) {
                         document.getElementById(f+'_x').value = data[f].x_pos || 0;
                         document.getElementById(f+'_y').value = data[f].y_pos || 0;
@@ -244,7 +291,7 @@ const checkFb = setInterval(() => {
                 });
             }
         });
-        window.fbOnValue(window.fbRef(window.fbDb, 'settings/background'), (snapshot) => {
+        window.fbOnValue(window.fbRef(window.fbDb, 'settings/background_gov'), (snapshot) => {
             const bg = snapshot.val();
             if(bg) {
                 document.getElementById('print-preview-area').style.backgroundImage = `url('${bg}')`;
@@ -269,7 +316,7 @@ window.addEventListener('resize', fitPreviewToScreen);
 
 async function saveSettings() {
     const data = {};
-    ['name', 'category'].forEach(f => {
+    ['nomor', 'name', 'category'].forEach(f => {
         data[f] = {
             x_pos: document.getElementById(f+'_x').value,
             y_pos: document.getElementById(f+'_y').value,
@@ -281,7 +328,7 @@ async function saveSettings() {
         };
     });
     
-    await window.fbSet(window.fbRef(window.fbDb, 'settings/print'), data);
+    await window.fbSet(window.fbRef(window.fbDb, 'settings/print_gov'), data);
     document.getElementById('save-status').innerText = '✅ Tersimpan ke Firebase!';
     setTimeout(() => document.getElementById('save-status').innerText = '', 2000);
 }
@@ -299,7 +346,7 @@ async function uploadBg() {
     reader.onload = async function(e) {
         const base64 = e.target.result;
         try {
-            await window.fbSet(window.fbRef(window.fbDb, 'settings/background'), base64);
+            await window.fbSet(window.fbRef(window.fbDb, 'settings/background_gov'), base64);
             alert('Background berhasil diunggah dan tersimpan di Firebase!');
         } catch(err) {
             alert('Gagal mengunggah: Pastikan ukuran gambar tidak terlalu besar (Maks ~1MB untuk Realtime DB).');

@@ -149,6 +149,7 @@ async function submitQueue() {
     if(!searchInput.value) return;
     const name = searchInput.value.trim();
     const cat = document.getElementById('category').value.trim();
+    const nomor = document.getElementById('nomor') ? document.getElementById('nomor').value.trim() : '';
     
     const qRef = window.fbRef(window.fbDb, 'queue');
     const snapshot = await window.fbGet(qRef);
@@ -163,6 +164,7 @@ async function submitQueue() {
     await window.fbPush(qRef, {
         participant_name: name,
         category: cat,
+        nomor: nomor,
         status: 'pending',
         timestamp: Date.now()
     });

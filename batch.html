@@ -66,7 +66,7 @@
             }
         }
 
-        .field-name, .field-category {
+        .field-name, .field-category, .field-nomor {
             position: absolute;
             width: 100%;
         }
@@ -105,15 +105,19 @@
         const checkFb = setInterval(async () => {
             if(window.fbDb) {
                 clearInterval(checkFb);
+                const urlParams = new URLSearchParams(window.location.search);
+                const isGov = urlParams.get('type') === 'gov';
                 
                 // Get Settings first
                 let settings = {};
-                const snapSettings = await window.fbGet(window.fbRef(window.fbDb, 'settings/print'));
+                const settingsPath = isGov ? 'settings/print_gov' : 'settings/print';
+                const snapSettings = await window.fbGet(window.fbRef(window.fbDb, settingsPath));
                 if(snapSettings.val()) settings = snapSettings.val();
                 
                 // Get Background
                 let bgUrl = '';
-                const snapBg = await window.fbGet(window.fbRef(window.fbDb, 'settings/background'));
+                const bgPath = isGov ? 'settings/background_gov' : 'settings/background';
+                const snapBg = await window.fbGet(window.fbRef(window.fbDb, bgPath));
                 if(snapBg.val()) bgUrl = snapBg.val();
 
                 // Get Queues
@@ -121,7 +125,6 @@
                 const qData = snapQueue.val();
                 let pending = [];
                 if(qData) {
-                    const urlParams = new URLSearchParams(window.location.search);
                     const singleId = urlParams.get('id');
                     
                     let allQs = Object.keys(qData).map(k => ({id: k, ...qData[k]}));
@@ -144,18 +147,22 @@
                 pending.forEach(q => {
                     const nSet = settings.name || { x_pos:0, y_pos:0, font_size:24, align:'center', font_family:'Arial', is_bold:0, color:'#000' };
                     const cSet = settings.category || { x_pos:0, y_pos:0, font_size:24, align:'center', font_family:'Arial', is_bold:0, color:'#000' };
+                    const numSet = settings.nomor || { x_pos:0, y_pos:0, font_size:18, align:'center', font_family:'Arial', is_bold:0, color:'#000' };
                     
                     loadGoogleFont(nSet.font_family);
                     loadGoogleFont(cSet.font_family);
+                    if(isGov) loadGoogleFont(numSet.font_family);
                     
                     const nStyle = `left:${nSet.x_pos}px; top:${nSet.y_pos}px; font-size:${nSet.font_size}px; text-align:${nSet.align}; font-weight:${nSet.is_bold ? 'bold':'normal'}; color:${nSet.color}; font-family:'${nSet.font_family}', sans-serif;`;
                     const cStyle = `left:${cSet.x_pos}px; top:${cSet.y_pos}px; font-size:${cSet.font_size}px; text-align:${cSet.align}; font-weight:${cSet.is_bold ? 'bold':'normal'}; color:${cSet.color}; font-family:'${cSet.font_family}', sans-serif;`;
+                    const numStyle = `left:${numSet.x_pos}px; top:${numSet.y_pos}px; font-size:${numSet.font_size}px; text-align:${numSet.align}; font-weight:${numSet.is_bold ? 'bold':'normal'}; color:${numSet.color}; font-family:'${numSet.font_family}', sans-serif;`;
                     
                     const pageBgStyle = bgUrl ? `background-image: url('${bgUrl}');` : '';
 
                     html += `
                         <div class="print-wrapper">
                             <div class="print-page" style="${pageBgStyle}">
+                                ${(isGov && q.nomor) ? `<div class="field-nomor" style="${numStyle}">${escapeHTML(q.nomor)}</div>` : ''}
                                 <div class="field-name" style="${nStyle}">
                                     ${escapeHTML(q.participant_name)}
                                 </div>

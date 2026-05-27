@@ -25,9 +25,10 @@
 <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2>Daftar Antrean Print (Pending)</h2>
-        <div>
-            <button onclick="window.open('batch.html', '_blank')" class="btn btn-primary">Cetak Masal Semua</button>
-            <button onclick="clearQueue()" class="btn btn-danger">Hapus Semua</button>
+        <div style="display:flex; gap:8px;">
+            <button onclick="window.open('batch.html', '_blank')" class="btn btn-primary btn-sm">Cetak Masal Biasa</button>
+            <button onclick="window.open('batch.html?type=gov', '_blank')" class="btn btn-secondary btn-sm">Cetak Masal Pemerintah</button>
+            <button onclick="clearQueue()" class="btn btn-danger btn-sm">Hapus Semua</button>
         </div>
     </div>
     <table class="table mt-2">
@@ -102,8 +103,9 @@ function renderQueues() {
         <tr id="queue-${q.id}">
             <td>${escapeHTML(q.participant_name)}</td>
             <td>${escapeHTML(q.category)}</td>
-            <td style="text-align:right;">
+            <td style="text-align:right; min-width: 180px;">
                 <button onclick="window.open('batch.html?id=${q.id}', '_blank')" class="btn btn-primary btn-sm">Print</button>
+                <button onclick="window.open('batch.html?id=${q.id}&type=gov', '_blank')" class="btn btn-secondary btn-sm">Print Gov</button>
                 <button onclick="deleteQueue('${q.id}')" class="btn btn-danger btn-sm">Hapus</button>
             </td>
         </tr>
@@ -113,8 +115,9 @@ function renderQueues() {
         <tr id="queue-${q.id}">
             <td>${escapeHTML(q.participant_name)}</td>
             <td>${escapeHTML(q.category)}</td>
-            <td style="text-align:right;">
+            <td style="text-align:right; min-width: 250px;">
                 <button onclick="window.open('batch.html?id=${q.id}', '_blank')" class="btn btn-primary btn-sm">Print Ulang</button>
+                <button onclick="window.open('batch.html?id=${q.id}&type=gov', '_blank')" class="btn btn-secondary btn-sm">Print Gov</button>
                 <button onclick="rollbackQueue('${q.id}')" class="btn btn-warning btn-sm">Rollback</button>
                 <button onclick="deleteQueue('${q.id}')" class="btn btn-danger btn-sm">Hapus</button>
             </td>

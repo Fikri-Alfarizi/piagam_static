@@ -62,6 +62,10 @@
             <h3>Tambah Peserta Manual</h3>
             <form id="add-participant-form" onsubmit="return false;">
                 <div class="form-group">
+                    <label>Nomor Peserta (Opsional)</label>
+                    <input type="text" id="new_nomor" autocomplete="off" placeholder="Contoh: 299 /O2SN...">
+                </div>
+                <div class="form-group">
                     <label>Nama Lengkap</label>
                     <input type="text" id="new_name" required autocomplete="off">
                 </div>
@@ -121,13 +125,16 @@ function renderTable() {
             let badgeColor = status === 'Di Antrean' ? '#f39c12' : (status === 'Sudah Dicetak' ? '#27ae60' : '#bdc3c7');
             let badgeHtml = `<span class="badge" style="background:${badgeColor}; color:#fff; font-size:11px;">${status}</span>`;
             
+            const nomorValue = p.nomor ? escapeHTML(p.nomor) : '';
+            
             html += `
             <tr style="border-bottom:1px solid #eee;">
                 <td style="padding:10px;">${startIdx + idx + 1}</td>
                 <td style="padding:10px;">
-                    <div style="display:flex; gap:10px;">
-                        <input type="text" id="edit_name_${p.id}" value="${escapeHTML(p.name)}" style="width:100%; border:1px solid transparent; background:transparent; padding:2px 5px;" onfocus="this.style.border='1px solid #3498db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';" oninput="document.getElementById('btn_save_${p.id}').style.display='inline-block'">
-                        <button id="btn_save_${p.id}" class="btn btn-primary btn-sm" style="display:none;" onclick="updateParticipant('${p.id}')">Simpan</button>
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                        <input type="text" id="edit_name_${p.id}" value="${escapeHTML(p.name)}" placeholder="Nama" style="width:100%; border:1px solid transparent; background:transparent; padding:2px 5px;" onfocus="this.style.border='1px solid #3498db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';" oninput="document.getElementById('btn_save_${p.id}').style.display='inline-block'">
+                        <input type="text" id="edit_nomor_${p.id}" value="${nomorValue}" placeholder="Nomor (Opsional)" style="width:100%; border:1px solid transparent; background:transparent; padding:2px 5px; font-size:12px; color:#666;" onfocus="this.style.border='1px solid #3498db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';" oninput="document.getElementById('btn_save_${p.id}').style.display='inline-block'">
+                        <button id="btn_save_${p.id}" class="btn btn-primary btn-sm" style="display:none; align-self:flex-start;" onclick="updateParticipant('${p.id}')">Simpan</button>
                     </div>
                 </td>
                 <td style="padding:10px; text-align:center;">${badgeHtml}</td>
@@ -177,6 +184,7 @@ document.getElementById('search-input').addEventListener('input', (e) => {
 // Add
 document.getElementById('btn-add').addEventListener('click', async () => {
     const name = document.getElementById('new_name').value.trim();
+    const nomor = document.getElementById('new_nomor').value.trim();
     if(!name) return;
     
     // Check duplicate
@@ -187,6 +195,7 @@ document.getElementById('btn-add').addEventListener('click', async () => {
     
     await window.fbPush(window.fbRef(window.fbDb, 'participants'), {
         name: name,
+        nomor: nomor,
         timestamp: Date.now()
     });
     document.getElementById('add-participant-form').reset();
@@ -196,9 +205,10 @@ document.getElementById('btn-add').addEventListener('click', async () => {
 // Update
 window.updateParticipant = async (id) => {
     const newName = document.getElementById(`edit_name_${id}`).value.trim();
+    const newNomor = document.getElementById(`edit_nomor_${id}`).value.trim();
     if(!newName) return;
-    await window.fbUpdate(window.fbRef(window.fbDb, `participants/${id}`), { name: newName });
-    showToast('Nama diperbarui');
+    await window.fbUpdate(window.fbRef(window.fbDb, `participants/${id}`), { name: newName, nomor: newNomor });
+    showToast('Data diperbarui');
 };
 
 // Delete

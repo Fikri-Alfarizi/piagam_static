@@ -101,32 +101,35 @@ async function scanFile() {
             const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
             
             let nameColIdx = -1;
+            let nomorColIdx = -1;
             let startRow = 0;
             
-            // Cari baris header yang mengandung kata 'nama'
+            // Cari baris header yang mengandung kata 'nama' dan 'nomor'
             for (let i = 0; i < Math.min(10, rows.length); i++) {
                 if(!rows[i]) continue;
                 for (let j = 0; j < rows[i].length; j++) {
-                    const cell = String(rows[i][j] || '').toLowerCase();
-                    if (cell.includes('nama')) {
-                        nameColIdx = j;
-                        startRow = i + 1; // Data dimulai setelah header
-                        break;
-                    }
+                    const cell = String(rows[i][j] || '').toLowerCase().trim();
+                    if (cell.includes('nama')) nameColIdx = j;
+                    if (cell === 'no' || cell.includes('nomor')) nomorColIdx = j;
                 }
-                if(nameColIdx !== -1) break;
+                if(nameColIdx !== -1) {
+                    startRow = i + 1; // Data dimulai setelah header
+                    break;
+                }
             }
             
-            // Jika tidak ketemu header 'nama', asumsikan kolom pertama (index 0) adalah nama
+            // Jika tidak ketemu header 'nama', asumsikan kolom pertama adalah nama
             if (nameColIdx === -1) {
                 nameColIdx = 0;
                 startRow = 0;
             }
             
-            // Ekstrak hanya nama
+            // Ekstrak nama dan nomor
             for (let i = startRow; i < rows.length; i++) {
                 if(rows[i] && rows[i][nameColIdx]) {
-                    extractedText += String(rows[i][nameColIdx]).trim() + '\n';
+                    const name = String(rows[i][nameColIdx]).trim();
+                    const nomor = (nomorColIdx !== -1 && rows[i][nomorColIdx]) ? String(rows[i][nomorColIdx]).trim() : '';
+                    extractedText += (nomor ? nomor + ' | ' : '') + name + '\n';
                 }
             }
             
@@ -194,15 +197,24 @@ document.getElementById('importForm').addEventListener('submit', async (e) => {
             line = line.trim();
             if(!line) continue;
             
-            if(existingNames.includes(line.toLowerCase())) {
+            let name = line;
+            let nomor = '';
+            if (line.includes(' | ')) {
+                const parts = line.split(' | ');
+                nomor = parts[0].trim();
+                name = parts[1].trim();
+            }
+            
+            if(existingNames.includes(name.toLowerCase())) {
                 duplicateCount++;
                 continue;
             }
-            existingNames.push(line.toLowerCase()); // Cegah duplikat di dalam input teks itu sendiri
+            existingNames.push(name.toLowerCase()); // Cegah duplikat di dalam input teks itu sendiri
             
             const newRef = window.fbPush(window.fbRef(window.fbDb, 'participants'));
             updates[newRef.key] = {
-                name: line,
+                name: name,
+                nomor: nomor,
                 timestamp: Date.now() + count
             };
             count++;
