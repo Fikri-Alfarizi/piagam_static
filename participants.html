@@ -23,53 +23,103 @@
             <div class="container">
                 <div id="toast" class="toast"></div>
 
-<div class="row">
-    <div class="col-60">
+<div class="row" style="flex-direction: column;">
+    <div style="width:100%;">
         <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <h2>Database Peserta</h2>
                 <div style="display:flex; gap:10px; align-items:center;">
-                    <input type="text" id="search-input" placeholder="Cari nama..." style="padding:5px; border:1px solid #ccc; border-radius:4px;">
+                    <input type="text" id="search-input" placeholder="Cari nama..." style="padding:6px 12px; border:1px solid #ccc; border-radius:4px; font-size:13px;">
                     <button type="button" id="btn-clear-all" class="btn btn-danger btn-sm">🗑️ Hapus Semua</button>
                 </div>
             </div>
             <p style="font-size:12px; color:#666;">Data master peserta. Terhubung secara real-time via Firebase.</p>
             
-            <table style="width:100%; border-collapse:collapse; margin-top:15px; font-size:14px;">
-                <thead>
-                    <tr style="background:#f8f9fa; text-align:left;">
-                        <th style="padding:10px; border-bottom:2px solid #ddd;">#</th>
-                        <th style="padding:10px; border-bottom:2px solid #ddd;">Nama Peserta</th>
-                        <th style="padding:10px; border-bottom:2px solid #ddd; text-align:center;">Status Print</th>
-                        <th style="padding:10px; border-bottom:2px solid #ddd; text-align:right;">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="participants-tbody">
-                    <tr>
-                        <td colspan="4" style="padding:20px; text-align:center; color:#999;">Memuat data dari Firebase...</td>
-                    </tr>
-                </tbody>
-            </table>
-            <div style="margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
-                <span id="page-info" style="font-size:14px;"></span>
+            <div style="width:100%; overflow-x:auto; border:1px solid #ddd; border-radius:4px; margin-top:15px;">
+                <table style="width:100%; border-collapse:collapse; font-size:12px; min-width:1000px; white-space:nowrap;">
+                    <thead>
+                        <tr style="background:#f1f5f9; text-align:left; color:#333;">
+                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd; width:40px; text-align:center;">#</th>
+                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">No.</th>
+                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd; min-width:120px;">Nama Lengkap</th>
+                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">NISN</th>
+                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">Sabuk</th>
+                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">Kategori</th>
+                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd; text-align:center;">L/P</th>
+                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">Asal Sekolah</th>
+                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">Jenjang</th>
+                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">Kecamatan</th>
+                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">Kelas</th>
+                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">BB/TB</th>
+                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd; text-align:center;">Status Print</th>
+                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd; text-align:center;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="participants-tbody">
+                        <tr>
+                            <td colspan="14" style="padding:20px; text-align:center; color:#999;">Memuat data dari Firebase...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
+                <span id="page-info" style="font-size:13px; color:#666;"></span>
                 <div id="pagination-controls" style="display:flex; gap:5px;"></div>
             </div>
         </div>
     </div>
     
-    <div class="col-40">
+    <div style="width:100%;">
         <div class="card">
-            <h3>Tambah Peserta Manual</h3>
-            <form id="add-participant-form" onsubmit="return false;">
-                <div class="form-group">
-                    <label>Nomor Peserta (Opsional)</label>
-                    <input type="text" id="new_nomor" autocomplete="off" placeholder="Contoh: 299 /O2SN...">
+            <h3 style="margin-bottom:15px;">Tambah Peserta Manual</h3>
+            <form id="add-participant-form" onsubmit="return false;" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:15px; align-items:flex-end;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:12px;">No.</label>
+                    <input type="text" id="new_nomor" autocomplete="off" placeholder="No.">
                 </div>
-                <div class="form-group">
-                    <label>Nama Lengkap</label>
-                    <input type="text" id="new_name" required autocomplete="off">
+                <div class="form-group" style="margin-bottom:0; grid-column: span 2;">
+                    <label style="font-size:12px;">Nama Lengkap</label>
+                    <input type="text" id="new_name" required autocomplete="off" placeholder="Nama">
                 </div>
-                <button type="submit" id="btn-add" class="btn btn-primary" style="width:100%;">Tambah Peserta</button>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:12px;">NISN</label>
+                    <input type="text" id="new_nisn" autocomplete="off" placeholder="NISN">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:12px;">Sabuk</label>
+                    <input type="text" id="new_sabuk" autocomplete="off" placeholder="Sabuk">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:12px;">Kategori</label>
+                    <input type="text" id="new_kategori" autocomplete="off" placeholder="Kategori">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:12px;">L/P</label>
+                    <input type="text" id="new_jk" autocomplete="off" placeholder="L/P">
+                </div>
+                <div class="form-group" style="margin-bottom:0; grid-column: span 2;">
+                    <label style="font-size:12px;">Asal Sekolah</label>
+                    <input type="text" id="new_asal" autocomplete="off" placeholder="Asal Sekolah">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:12px;">Jenjang</label>
+                    <input type="text" id="new_jenjang" autocomplete="off" placeholder="SD/SMP/SMA">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:12px;">Kecamatan</label>
+                    <input type="text" id="new_kecamatan" autocomplete="off" placeholder="Kecamatan">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:12px;">Kelas</label>
+                    <input type="text" id="new_kelas" autocomplete="off" placeholder="Kelas">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:12px;">BB/TB</label>
+                    <input type="text" id="new_bbtb" autocomplete="off" placeholder="BB/TB">
+                </div>
+                <div class="form-group" style="margin-bottom:0; grid-column: 1 / -1;">
+                    <button type="submit" id="btn-add" class="btn btn-primary" style="width:100%; padding:12px;">+ Tambah Peserta Manual</button>
+                </div>
             </form>
         </div>
     </div>
@@ -96,6 +146,11 @@ let currentPage = 1;
 let itemsPerPage = 50;
 let searchQuery = '';
 
+window.changePage = (delta) => {
+    currentPage += delta;
+    renderTable();
+};
+
 function renderTable() {
     const tbody = document.getElementById('participants-tbody');
     let filtered = allParticipants;
@@ -113,7 +168,7 @@ function renderTable() {
     
     let html = '';
     if (paged.length === 0) {
-        html = '<tr><td colspan="4" style="padding:20px; text-align:center; color:#999;">Data peserta tidak ditemukan.</td></tr>';
+        html = '<tr><td colspan="14" style="padding:20px; text-align:center; color:#999;">Data peserta tidak ditemukan.</td></tr>';
     } else {
         paged.forEach((p, idx) => {
             // Cek Status
@@ -123,23 +178,43 @@ function renderTable() {
             else if(itemQueues.some(q => q.status === 'printed')) status = 'Sudah Dicetak';
             
             let badgeColor = status === 'Di Antrean' ? '#f39c12' : (status === 'Sudah Dicetak' ? '#27ae60' : '#bdc3c7');
-            let badgeHtml = `<span class="badge" style="background:${badgeColor}; color:#fff; font-size:11px;">${status}</span>`;
+            let badgeHtml = `<span class="badge" style="background:${badgeColor}; color:#fff; font-size:10px; white-space:nowrap; padding:3px 6px;">${status}</span>`;
             
             const nomorValue = p.nomor ? escapeHTML(p.nomor) : '';
+            const nisnValue = p.nisn ? escapeHTML(p.nisn) : '';
+            const sabukValue = p.sabuk ? escapeHTML(p.sabuk) : '';
+            const kategoriValue = p.kategori ? escapeHTML(p.kategori) : '';
+            const jkValue = p.jk ? escapeHTML(p.jk) : '';
+            const asalValue = p.asal_sekolah ? escapeHTML(p.asal_sekolah) : '';
+            const jenjangValue = p.jenjang ? escapeHTML(p.jenjang) : '';
+            const kecValue = p.kecamatan ? escapeHTML(p.kecamatan) : '';
+            const kelasValue = p.kelas ? escapeHTML(p.kelas) : '';
+            const bbtbValue = p.bbtb ? escapeHTML(p.bbtb) : '';
             
             html += `
-            <tr style="border-bottom:1px solid #eee;">
-                <td style="padding:10px;">${startIdx + idx + 1}</td>
-                <td style="padding:10px;">
+            <tr style="border-bottom:1px solid #eee; transition:background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                <td style="padding:6px 8px; border:1px solid #eee; text-align:center;">${startIdx + idx + 1}</td>
+                <td style="padding:6px 8px; border:1px solid #eee;">
+                    <input type="text" id="edit_nomor_${p.id}" value="${nomorValue}" style="width:100%; border:1px solid transparent; background:transparent; padding:2px 4px; font-size:11px;" onfocus="this.style.border='1px solid #3498db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';" oninput="document.getElementById('btn_save_${p.id}').style.display='inline-block'">
+                </td>
+                <td style="padding:6px 8px; border:1px solid #eee;">
                     <div style="display:flex; flex-direction:column; gap:4px;">
-                        <input type="text" id="edit_name_${p.id}" value="${escapeHTML(p.name)}" placeholder="Nama" style="width:100%; border:1px solid transparent; background:transparent; padding:2px 5px;" onfocus="this.style.border='1px solid #3498db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';" oninput="document.getElementById('btn_save_${p.id}').style.display='inline-block'">
-                        <input type="text" id="edit_nomor_${p.id}" value="${nomorValue}" placeholder="Nomor (Opsional)" style="width:100%; border:1px solid transparent; background:transparent; padding:2px 5px; font-size:12px; color:#666;" onfocus="this.style.border='1px solid #3498db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';" oninput="document.getElementById('btn_save_${p.id}').style.display='inline-block'">
-                        <button id="btn_save_${p.id}" class="btn btn-primary btn-sm" style="display:none; align-self:flex-start;" onclick="updateParticipant('${p.id}')">Simpan</button>
+                        <input type="text" id="edit_name_${p.id}" value="${escapeHTML(p.name)}" placeholder="Nama" style="width:100%; min-width:150px; border:1px solid transparent; background:transparent; padding:2px 4px; font-size:12px; font-weight:500; color:#111;" onfocus="this.style.border='1px solid #3498db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';" oninput="document.getElementById('btn_save_${p.id}').style.display='inline-block'">
+                        <button id="btn_save_${p.id}" class="btn btn-primary btn-sm" style="display:none; align-self:flex-start; padding:2px 6px; font-size:10px;" onclick="updateParticipant('${p.id}')">Simpan Edit</button>
                     </div>
                 </td>
-                <td style="padding:10px; text-align:center;">${badgeHtml}</td>
-                <td style="padding:10px; text-align:right;">
-                    <button class="btn btn-danger btn-sm" onclick="deleteParticipant('${p.id}')">Hapus</button>
+                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555;">${nisnValue}</td>
+                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555;">${sabukValue}</td>
+                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555;">${kategoriValue}</td>
+                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555; text-align:center;">${jkValue}</td>
+                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555;">${asalValue}</td>
+                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555;">${jenjangValue}</td>
+                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555;">${kecValue}</td>
+                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555;">${kelasValue}</td>
+                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555;">${bbtbValue}</td>
+                <td style="padding:6px 8px; border:1px solid #eee; text-align:center;">${badgeHtml}</td>
+                <td style="padding:6px 8px; border:1px solid #eee; text-align:center;">
+                    <button class="btn btn-danger" style="padding:4px 8px; font-size:11px;" onclick="deleteParticipant('${p.id}')">Hapus</button>
                 </td>
             </tr>`;
         });
@@ -151,8 +226,8 @@ function renderTable() {
     
     // Pagination Controls
     let pagesHtml = '';
-    if(currentPage > 1) pagesHtml += `<button onclick="currentPage--; renderTable()">Prev</button>`;
-    if(currentPage < totalPages) pagesHtml += `<button onclick="currentPage++; renderTable()">Next</button>`;
+    if(currentPage > 1) pagesHtml += `<button class="btn btn-secondary btn-sm" onclick="changePage(-1)">Prev</button>`;
+    if(currentPage < totalPages) pagesHtml += `<button class="btn btn-secondary btn-sm" onclick="changePage(1)">Next</button>`;
     document.getElementById('pagination-controls').innerHTML = pagesHtml;
 }
 
@@ -195,7 +270,16 @@ document.getElementById('btn-add').addEventListener('click', async () => {
     
     await window.fbPush(window.fbRef(window.fbDb, 'participants'), {
         name: name,
-        nomor: nomor,
+        nomor: document.getElementById('new_nomor').value.trim(),
+        nisn: document.getElementById('new_nisn').value.trim(),
+        sabuk: document.getElementById('new_sabuk').value.trim(),
+        kategori: document.getElementById('new_kategori').value.trim(),
+        jk: document.getElementById('new_jk').value.trim(),
+        asal_sekolah: document.getElementById('new_asal').value.trim(),
+        jenjang: document.getElementById('new_jenjang').value.trim(),
+        kecamatan: document.getElementById('new_kecamatan').value.trim(),
+        kelas: document.getElementById('new_kelas').value.trim(),
+        bbtb: document.getElementById('new_bbtb').value.trim(),
         timestamp: Date.now()
     });
     document.getElementById('add-participant-form').reset();

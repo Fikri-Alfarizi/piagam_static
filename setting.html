@@ -152,7 +152,6 @@
                     </div>
                 </div>
             </div>
-        </div>
     </div>
 </div>
 
@@ -180,7 +179,7 @@
     </script>
 <script>
 const fonts = [
-    'Arial', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Inter', 'Noto Sans', 
+    'Arial', 'Times New Roman', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Inter', 'Noto Sans', 
     'Ubuntu', 'Mukta', 'PT Sans', 'Nunito', 'Rubik', 'Work Sans', 'Fira Sans', 'Quicksand',
     'Merriweather', 'Playfair Display', 'Lora', 'PT Serif', 'Noto Serif', 'Libre Baskerville', 
     'EB Garamond', 'Cormorant Garamond', 'Crimson Text', 'Bebas Neue', 'Oswald', 'Anton', 
@@ -189,7 +188,7 @@ const fonts = [
 ];
 
 // Inject Font Link
-const googleFonts = fonts.filter(f => f !== 'Arial').map(f => 'family=' + f.replace(/ /g, '+')).join('&');
+const googleFonts = fonts.filter(f => f !== 'Arial' && f !== 'Times New Roman').map(f => 'family=' + f.replace(/ /g, '+')).join('&');
 const link = document.createElement('link');
 link.href = 'https://fonts.googleapis.com/css2?' + googleFonts + '&display=swap';
 link.rel = 'stylesheet';
@@ -198,7 +197,8 @@ document.head.appendChild(link);
 // Populate selects
 let optionsHtml = '';
 fonts.forEach(f => {
-    optionsHtml += `<option value="${f}" style="font-family: '${f}', sans-serif; font-size: 18px;">${f}</option>`;
+    let fallback = f === 'Times New Roman' ? 'serif' : 'sans-serif';
+    optionsHtml += `<option value="${f}" style="font-family: '${f}', ${fallback}; font-size: 18px;">${f}</option>`;
 });
 document.getElementById('name_font').innerHTML = optionsHtml;
 document.getElementById('category_font').innerHTML = optionsHtml;

@@ -161,6 +161,49 @@
                 <label for="category_bold" style="cursor:pointer; font-size:13px; font-weight:600; margin:0;">Tebal (Bold)</label>
             </div>
         </div>
+        <div class="p-3" style="border:1px solid var(--border); background:var(--secondary); border-radius: var(--radius);">
+            <h4 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Elemen: sekolah</h4>
+            <div style="display:flex; gap:16px; margin-bottom:16px;">
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">X (px)</label>
+                    <input type="number" id="sekolah_x" value="0" oninput="updatePreview('sekolah')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s;">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Y (px)</label>
+                    <input type="number" id="sekolah_y" value="0" oninput="updatePreview('sekolah')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s;">
+                </div>
+            </div>
+            <div style="display:flex; gap:16px; margin-bottom:16px;">
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Size (px)</label>
+                    <input type="number" id="sekolah_size" value="24" oninput="updatePreview('sekolah')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s;">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Align</label>
+                    <select id="sekolah_align" onchange="updatePreview('sekolah')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s; background:#fff;">
+                        <option value="left">Left</option>
+                        <option value="center">Center</option>
+                        <option value="right">Right</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex; gap:16px; margin-bottom:16px;">
+                <div style="flex:2;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Font</label>
+                    <select id="sekolah_font" onchange="updatePreview('sekolah')" style="width:100%; padding:8px 12px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s; background:#fff; font-size: 16px;">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:12px; font-weight: 600; color:var(--text-muted); display:block; margin-bottom:4px;">Warna</label>
+                    <input type="color" id="sekolah_color" value="#000000" onchange="updatePreview('sekolah')" style="width:100%; height:36px; padding:2px; border: 1px solid var(--border); border-radius: 4px; outline:none; transition: border 0.15s; cursor:pointer;">
+                </div>
+            </div>
+            <div style="display:flex; align-items:center;">
+                <input type="checkbox" id="sekolah_bold" onchange="updatePreview('sekolah')" style="margin:0; margin-right:8px; cursor:pointer;">
+                <label for="sekolah_bold" style="cursor:pointer; font-size:13px; font-weight:600; margin:0;">Tebal (Bold)</label>
+            </div>
+        </div>
     </div>
     
     <button class="btn btn-primary" onclick="saveSettings()" style="width:100%; padding:14px; font-weight:bold; font-size: 15px;">Simpan Permanen ke Firebase</button>
@@ -196,9 +239,11 @@
                     <div id="preview_category" class="draggable" data-field="category" style="position:absolute; width:100%; cursor:move; border:1px dashed transparent; user-select:none;">
                         Juara 1 Kumite Bebas -55kg
                     </div>
+                    <div id="preview_sekolah" class="draggable" data-field="sekolah" style="position:absolute; width:100%; cursor:move; border:1px dashed transparent; user-select:none; left:0px; top:161px; font-size:24px; text-align:center; font-family:Arial; color:#000000;">
+                        Asal Sekolah (SDN 1 Contoh)
+                    </div>
                 </div>
             </div>
-        </div>
     </div>
 </div>
 
@@ -226,7 +271,7 @@
     </script>
 <script>
 const fonts = [
-    'Arial', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Inter', 'Noto Sans', 
+    'Arial', 'Times New Roman', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins', 'Inter', 'Noto Sans', 
     'Ubuntu', 'Mukta', 'PT Sans', 'Nunito', 'Rubik', 'Work Sans', 'Fira Sans', 'Quicksand',
     'Merriweather', 'Playfair Display', 'Lora', 'PT Serif', 'Noto Serif', 'Libre Baskerville', 
     'EB Garamond', 'Cormorant Garamond', 'Crimson Text', 'Bebas Neue', 'Oswald', 'Anton', 
@@ -235,7 +280,7 @@ const fonts = [
 ];
 
 // Inject Font Link
-const googleFonts = fonts.filter(f => f !== 'Arial').map(f => 'family=' + f.replace(/ /g, '+')).join('&');
+const googleFonts = fonts.filter(f => f !== 'Arial' && f !== 'Times New Roman').map(f => 'family=' + f.replace(/ /g, '+')).join('&');
 const link = document.createElement('link');
 link.href = 'https://fonts.googleapis.com/css2?' + googleFonts + '&display=swap';
 link.rel = 'stylesheet';
@@ -244,11 +289,13 @@ document.head.appendChild(link);
 // Populate selects
 let optionsHtml = '';
 fonts.forEach(f => {
-    optionsHtml += `<option value="${f}" style="font-family: '${f}', sans-serif; font-size: 18px;">${f}</option>`;
+    let fallback = f === 'Times New Roman' ? 'serif' : 'sans-serif';
+    optionsHtml += `<option value="${f}" style="font-family: '${f}', ${fallback}; font-size: 18px;">${f}</option>`;
 });
 document.getElementById('name_font').innerHTML = optionsHtml;
 document.getElementById('category_font').innerHTML = optionsHtml;
 document.getElementById('nomor_font').innerHTML = optionsHtml;
+document.getElementById('sekolah_font').innerHTML = optionsHtml;
 
 const loadedFonts = new Set();
 let currentScale = 1;
@@ -277,7 +324,7 @@ const checkFb = setInterval(() => {
         window.fbOnValue(window.fbRef(window.fbDb, 'settings/print_gov'), (snapshot) => {
             const data = snapshot.val();
             if(data) {
-                ['nomor', 'name', 'category'].forEach(f => {
+                ['nomor', 'name', 'category', 'sekolah'].forEach(f => {
                     if(data[f]) {
                         document.getElementById(f+'_x').value = data[f].x_pos || 0;
                         document.getElementById(f+'_y').value = data[f].y_pos || 0;
@@ -316,7 +363,7 @@ window.addEventListener('resize', fitPreviewToScreen);
 
 async function saveSettings() {
     const data = {};
-    ['nomor', 'name', 'category'].forEach(f => {
+    ['nomor', 'name', 'category', 'sekolah'].forEach(f => {
         data[f] = {
             x_pos: document.getElementById(f+'_x').value,
             y_pos: document.getElementById(f+'_y').value,

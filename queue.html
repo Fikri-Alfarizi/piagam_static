@@ -101,7 +101,12 @@ function renderQueues() {
     
     const pendingHtml = pending.length ? pending.map(q => `
         <tr id="queue-${q.id}">
-            <td>${escapeHTML(q.participant_name)}</td>
+            <td>
+                ${escapeHTML(q.participant_name)}
+                <span class="badge" style="background:${q.is_gov ? '#9b59b6' : '#34495e'}; color:#fff; font-size:10px; margin-left:8px; padding:3px 6px; vertical-align:middle;">
+                    ${q.is_gov ? 'Pemerintah' : 'Biasa'}
+                </span>
+            </td>
             <td>${escapeHTML(q.category)}</td>
             <td style="text-align:right; min-width: 180px;">
                 <button onclick="window.open('batch.html?id=${q.id}', '_blank')" class="btn btn-primary btn-sm">Print</button>
@@ -113,7 +118,12 @@ function renderQueues() {
     
     const printedHtml = printed.length ? printed.map(q => `
         <tr id="queue-${q.id}">
-            <td>${escapeHTML(q.participant_name)}</td>
+            <td>
+                ${escapeHTML(q.participant_name)}
+                <span class="badge" style="background:${q.is_gov ? '#9b59b6' : '#34495e'}; color:#fff; font-size:10px; margin-left:8px; padding:3px 6px; vertical-align:middle;">
+                    ${q.is_gov ? 'Pemerintah' : 'Biasa'}
+                </span>
+            </td>
             <td>${escapeHTML(q.category)}</td>
             <td style="text-align:right; min-width: 250px;">
                 <button onclick="window.open('batch.html?id=${q.id}', '_blank')" class="btn btn-primary btn-sm">Print Ulang</button>

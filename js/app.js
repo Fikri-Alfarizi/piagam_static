@@ -92,6 +92,13 @@ if(searchInput) {
                 li.onclick = () => {
                     searchInput.value = item.name;
                     list.style.display = 'none';
+                    
+                    const inputNomor = document.getElementById('nomor');
+                    if(inputNomor) inputNomor.value = item.nomor || '';
+                    
+                    const inputSekolah = document.getElementById('asal_sekolah');
+                    if(inputSekolah) inputSekolah.value = item.asal_sekolah || '';
+                    
                     document.getElementById('category').focus();
                 };
                 list.appendChild(li);
@@ -161,10 +168,18 @@ async function submitQueue() {
         return;
     }
     
+    const isGov = document.getElementById('is_gov') ? document.getElementById('is_gov').checked : false;
+    
+    const pMatched = participants ? participants.find(p => p.name.toLowerCase() === name.toLowerCase()) : null;
+    const inputSekolah = document.getElementById('asal_sekolah');
+    const asalSekolah = inputSekolah && isGov ? inputSekolah.value.trim() : (pMatched ? (pMatched.asal_sekolah || '') : '');
+    
     await window.fbPush(qRef, {
         participant_name: name,
         category: cat,
         nomor: nomor,
+        asal_sekolah: asalSekolah,
+        is_gov: isGov,
         status: 'pending',
         timestamp: Date.now()
     });

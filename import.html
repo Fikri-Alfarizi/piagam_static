@@ -100,8 +100,7 @@ async function scanFile() {
             // Convert to 2D Array
             const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
             
-            let nameColIdx = -1;
-            let nomorColIdx = -1;
+            let cols = { nomor: -1, nama: -1, nisn: -1, sabuk: -1, kategori: -1, jk: -1, asal: -1, jenjang: -1, kec: -1, kelas: -1, bbtb: -1 };
             let startRow = 0;
             
             // Cari baris header yang mengandung kata 'nama' dan 'nomor'
@@ -109,27 +108,47 @@ async function scanFile() {
                 if(!rows[i]) continue;
                 for (let j = 0; j < rows[i].length; j++) {
                     const cell = String(rows[i][j] || '').toLowerCase().trim();
-                    if (cell.includes('nama')) nameColIdx = j;
-                    if (cell === 'no' || cell.includes('nomor')) nomorColIdx = j;
+                    if (cell === 'no' || cell.includes('nomor')) cols.nomor = j;
+                    else if (cell.includes('nama')) cols.nama = j;
+                    else if (cell.includes('nisn')) cols.nisn = j;
+                    else if (cell.includes('sabuk')) cols.sabuk = j;
+                    else if (cell.includes('kategori')) cols.kategori = j;
+                    else if (cell === 'l/p' || cell === 'jk' || cell.includes('jenis kelamin')) cols.jk = j;
+                    else if (cell.includes('asal sekolah') || cell.includes('sekolah')) cols.asal = j;
+                    else if (cell.includes('sd/smp') || cell.includes('jenjang')) cols.jenjang = j;
+                    else if (cell.includes('kecamatan')) cols.kec = j;
+                    else if (cell.includes('kelas')) cols.kelas = j;
+                    else if (cell.includes('bb/tb') || cell.includes('bbtb')) cols.bbtb = j;
                 }
-                if(nameColIdx !== -1) {
+                if(cols.nama !== -1) {
                     startRow = i + 1; // Data dimulai setelah header
                     break;
                 }
             }
             
             // Jika tidak ketemu header 'nama', asumsikan kolom pertama adalah nama
-            if (nameColIdx === -1) {
-                nameColIdx = 0;
+            if (cols.nama === -1) {
+                cols.nama = 0;
                 startRow = 0;
             }
             
-            // Ekstrak nama dan nomor
+            // Ekstrak semua data
             for (let i = startRow; i < rows.length; i++) {
-                if(rows[i] && rows[i][nameColIdx]) {
-                    const name = String(rows[i][nameColIdx]).trim();
-                    const nomor = (nomorColIdx !== -1 && rows[i][nomorColIdx]) ? String(rows[i][nomorColIdx]).trim() : '';
-                    extractedText += (nomor ? nomor + ' | ' : '') + name + '\n';
+                if(rows[i] && rows[i][cols.nama]) {
+                    const getVal = (idx) => (idx !== -1 && rows[i][idx] !== undefined) ? String(rows[i][idx]).trim() : '';
+                    const fName = getVal(cols.nama);
+                    const fNo = getVal(cols.nomor);
+                    const fNisn = getVal(cols.nisn);
+                    const fSabuk = getVal(cols.sabuk);
+                    const fKategori = getVal(cols.kategori);
+                    const fJk = getVal(cols.jk);
+                    const fAsal = getVal(cols.asal);
+                    const fJenjang = getVal(cols.jenjang);
+                    const fKec = getVal(cols.kec);
+                    const fKelas = getVal(cols.kelas);
+                    const fBbtb = getVal(cols.bbtb);
+                    
+                    extractedText += `${fNo} | ${fName} | ${fNisn} | ${fSabuk} | ${fKategori} | ${fJk} | ${fAsal} | ${fJenjang} | ${fKec} | ${fKelas} | ${fBbtb}\n`;
                 }
             }
             
@@ -199,11 +218,36 @@ document.getElementById('importForm').addEventListener('submit', async (e) => {
             
             let name = line;
             let nomor = '';
-            if (line.includes(' | ')) {
-                const parts = line.split(' | ');
-                nomor = parts[0].trim();
-                name = parts[1].trim();
+            let nisn='', sabuk='', kategori='', jk='', asal_sekolah='', jenjang='', kecamatan='', kelas='', bbtb='';
+            
+            let separator = '';
+            if(line.includes('|')) separator = '|';
+            else if(line.includes('\t')) separator = '\t';
+            
+            if (separator) {
+                const parts = line.split(separator).map(s => s.trim());
+                if(parts.length >= 2) {
+                    nomor = parts[0];
+                    name = parts[1];
+                }
+                if(parts.length > 2) nisn = parts[2];
+                if(parts.length > 3) sabuk = parts[3];
+                if(parts.length > 4) kategori = parts[4];
+                if(parts.length > 5) jk = parts[5];
+                if(parts.length > 6) asal_sekolah = parts[6];
+                if(parts.length > 7) jenjang = parts[7];
+                if(parts.length > 8) kecamatan = parts[8];
+                if(parts.length > 9) kelas = parts[9];
+                if(parts.length > 10) bbtb = parts[10];
             }
+            
+            if(!name) continue;
+            
+            // Abaikan jika nama hanya berisi angka (biasanya efek copy-paste baris kosong Excel yang hanya bersisi nomor)
+            if(!separator && /^\d+$/.test(name)) continue;
+
+            if(name.toLowerCase() === 'nama lengkap' || name.toLowerCase() === 'nama peserta' || name.toLowerCase() === 'nama') continue;
+            if(nomor.toLowerCase() === 'no.' || nomor.toLowerCase() === 'no') continue;
             
             if(existingNames.includes(name.toLowerCase())) {
                 duplicateCount++;
@@ -215,6 +259,15 @@ document.getElementById('importForm').addEventListener('submit', async (e) => {
             updates[newRef.key] = {
                 name: name,
                 nomor: nomor,
+                nisn: nisn,
+                sabuk: sabuk,
+                kategori: kategori,
+                jk: jk,
+                asal_sekolah: asal_sekolah,
+                jenjang: jenjang,
+                kecamatan: kecamatan,
+                kelas: kelas,
+                bbtb: bbtb,
                 timestamp: Date.now() + count
             };
             count++;

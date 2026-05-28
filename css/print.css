@@ -8,5 +8,6 @@
         height: 210mm;
         page-break-after: always;
         overflow: hidden;
+        background: none !important;
     }
 }

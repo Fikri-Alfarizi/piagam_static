@@ -29,6 +29,7 @@
                 height: 794px;
                 position: relative;
                 overflow: hidden;
+                background: none !important;
             }
             .no-print {
                 display: none !important;
@@ -92,7 +93,7 @@
 
     const loadedFonts = new Set();
     function loadGoogleFont(fontFamily) {
-        if (!fontFamily || fontFamily === 'Arial' || loadedFonts.has(fontFamily)) return;
+        if (!fontFamily || fontFamily === 'Arial' || fontFamily === 'Times New Roman' || loadedFonts.has(fontFamily)) return;
         const link = document.createElement('link');
         link.href = 'https://fonts.googleapis.com/css2?family=' + fontFamily.replace(/ /g, '+') + '&display=swap';
         link.rel = 'stylesheet';
@@ -131,7 +132,11 @@
                     if (singleId) {
                         pending = allQs.filter(q => q.id === singleId);
                     } else {
-                        pending = allQs.filter(q => q.status === 'pending');
+                        if (isGov) {
+                            pending = allQs.filter(q => q.status === 'pending' && q.is_gov === true);
+                        } else {
+                            pending = allQs.filter(q => q.status === 'pending' && q.is_gov !== true);
+                        }
                         pending.sort((a,b) => a.timestamp - b.timestamp);
                     }
                 }
@@ -148,14 +153,21 @@
                     const nSet = settings.name || { x_pos:0, y_pos:0, font_size:24, align:'center', font_family:'Arial', is_bold:0, color:'#000' };
                     const cSet = settings.category || { x_pos:0, y_pos:0, font_size:24, align:'center', font_family:'Arial', is_bold:0, color:'#000' };
                     const numSet = settings.nomor || { x_pos:0, y_pos:0, font_size:18, align:'center', font_family:'Arial', is_bold:0, color:'#000' };
+                    const sekSet = settings.sekolah || { x_pos:0, y_pos:0, font_size:24, align:'center', font_family:'Arial', is_bold:0, color:'#000' };
                     
                     loadGoogleFont(nSet.font_family);
                     loadGoogleFont(cSet.font_family);
                     if(isGov) loadGoogleFont(numSet.font_family);
+                    if(isGov) loadGoogleFont(sekSet.font_family);
+                    const nFallback = nSet.font_family === 'Times New Roman' ? 'serif' : 'sans-serif';
+                    const cFallback = cSet.font_family === 'Times New Roman' ? 'serif' : 'sans-serif';
+                    const numFallback = isGov && numSet.font_family === 'Times New Roman' ? 'serif' : 'sans-serif';
+                    const sekFallback = isGov && sekSet.font_family === 'Times New Roman' ? 'serif' : 'sans-serif';
                     
-                    const nStyle = `left:${nSet.x_pos}px; top:${nSet.y_pos}px; font-size:${nSet.font_size}px; text-align:${nSet.align}; font-weight:${nSet.is_bold ? 'bold':'normal'}; color:${nSet.color}; font-family:'${nSet.font_family}', sans-serif;`;
-                    const cStyle = `left:${cSet.x_pos}px; top:${cSet.y_pos}px; font-size:${cSet.font_size}px; text-align:${cSet.align}; font-weight:${cSet.is_bold ? 'bold':'normal'}; color:${cSet.color}; font-family:'${cSet.font_family}', sans-serif;`;
-                    const numStyle = `left:${numSet.x_pos}px; top:${numSet.y_pos}px; font-size:${numSet.font_size}px; text-align:${numSet.align}; font-weight:${numSet.is_bold ? 'bold':'normal'}; color:${numSet.color}; font-family:'${numSet.font_family}', sans-serif;`;
+                    const nStyle = `left:${nSet.x_pos}px; top:${nSet.y_pos}px; font-size:${nSet.font_size}px; text-align:${nSet.align}; font-weight:${nSet.is_bold ? 'bold':'normal'}; color:${nSet.color}; font-family:'${nSet.font_family}', ${nFallback};`;
+                    const cStyle = `left:${cSet.x_pos}px; top:${cSet.y_pos}px; font-size:${cSet.font_size}px; text-align:${cSet.align}; font-weight:${cSet.is_bold ? 'bold':'normal'}; color:${cSet.color}; font-family:'${cSet.font_family}', ${cFallback};`;
+                    const numStyle = `left:${numSet.x_pos}px; top:${numSet.y_pos}px; font-size:${numSet.font_size}px; text-align:${numSet.align}; font-weight:${numSet.is_bold ? 'bold':'normal'}; color:${numSet.color}; font-family:'${numSet.font_family}', ${numFallback};`;
+                    const sekStyle = `left:${sekSet.x_pos}px; top:${sekSet.y_pos}px; font-size:${sekSet.font_size}px; text-align:${sekSet.align}; font-weight:${sekSet.is_bold ? 'bold':'normal'}; color:${sekSet.color}; font-family:'${sekSet.font_family}', ${sekFallback}; position:absolute; width:100%;`;
                     
                     const pageBgStyle = bgUrl ? `background-image: url('${bgUrl}');` : '';
 
@@ -167,6 +179,7 @@
                                     ${escapeHTML(q.participant_name)}
                                 </div>
                                 ${q.category ? `<div class="field-category" style="${cStyle}">${escapeHTML(q.category)}</div>` : ''}
+                                ${(isGov && q.asal_sekolah) ? `<div class="field-sekolah" style="${sekStyle}">${escapeHTML(q.asal_sekolah)}</div>` : ''}
                             </div>
                         </div>
                     `;
