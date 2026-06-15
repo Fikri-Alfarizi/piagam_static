@@ -21,6 +21,7 @@ onAuthStateChanged(auth, (user) => {
     const isLoginPage = window.location.pathname.endsWith('login.html');
     
     if (user) {
+        window.fbUser = user; // Expose user agar app.js tahu sudah auth
         // Jika sudah login tapi ada di halaman login, pindahkan ke dashboard
         if (isLoginPage) {
             window.location.href = 'index.html';

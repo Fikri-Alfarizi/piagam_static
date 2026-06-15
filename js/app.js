@@ -22,7 +22,7 @@ let participants = [];
 let queues = [];
 
 const checkFbApp = setInterval(() => {
-    if(window.fbDb) {
+    if(window.fbDb && window.fbUser) {
         clearInterval(checkFbApp);
         if(qList) {
             const qQuery = window.fbQuery(window.getAppRef('queue'), window.fbOrderByChild('status'), window.fbEqualTo('pending'));
@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const active = localStorage.getItem('active_tournament') || 'default';
     
     const checkFbTourney = setInterval(() => {
-        if(window.fbDb) {
+        if(window.fbDb && window.fbUser) {
             clearInterval(checkFbTourney);
             window.fbOnValue(window.fbRef(window.fbDb, 'tournaments_meta'), (snap) => {
                 const meta = snap.val() || {};

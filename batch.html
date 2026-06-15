@@ -2,11 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-        <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.gstatic.com; connect-src 'self' https://*.firebasedatabase.app https://generativelanguage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:;">
-    <title>Batch Print Piagam</title>
+        <title>Batch Print Piagam</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Alex+Brush&family=Allura&family=Cinzel:wght@400;700&family=Dancing+Script&family=Great+Vibes&family=Lora:ital,wght@0,400;0,700;1,400&family=Merriweather:wght@400;700&family=Montserrat:wght@400;600;700&family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;600&family=Parisienne&family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Poppins:wght@400;600;700&family=PT+Serif:wght@400;700&family=Roboto:wght@400;500;700&family=Tangerine:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/print.css">
     <script type="module" src="js/firebase-init.js"></script>
@@ -77,7 +73,6 @@
             width: 100%;
         }
     </style>
-    <script src="js/security.js"></script>
 </head>
 <body>
     <div class="no-print" style="padding: 20px; background: #eee; text-align: center;">
@@ -110,7 +105,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         // Wait until firebase-init is loaded and attached to window
         const checkFb = setInterval(async () => {
-            if(window.fbDb) {
+            if(window.fbDb && window.fbUser) {
                 clearInterval(checkFb);
                 const urlParams = new URLSearchParams(window.location.search);
                 const filterTemplate = urlParams.get('template');
