@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.gstatic.com; connect-src 'self' https://*.firebasedatabase.app https://generativelanguage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:;">
     <title>AI Smart Import - PiagamFast</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
@@ -22,24 +26,29 @@
         .tab-btn { background: none; border: none; font-size: 14px; font-weight: 600; color: #6b7280; padding: 8px 16px; cursor: pointer; border-radius: 6px; }
         .tab-btn.active { color: #000; background: #f3f4f6; }
     </style>
+    <script src="js/security.js"></script>
 </head>
 <body>
     <div class="app-layout">
         <aside class="sidebar">
             <div class="sidebar-brand">PiagamFast</div>
-            <nav class="sidebar-nav">
+                        <nav class="sidebar-nav">
                 <a href="index.html" id="nav-index">Dashboard</a>
                 <a href="participants.html" id="nav-participants">Data Peserta</a>
                 <a href="import.html" id="nav-import">Import</a>
                 <a href="queue.html" id="nav-queue">Antrean</a>
                 <a href="setting.html" id="nav-setting">Setting</a>
+                <a href="#" onclick="window.fbLogout(); return false;" style="color: #dc2828; margin-top: 20px;">🚪 Keluar</a>
             </nav>
         </aside>
         <main class="main-content">
             <div class="container">
 
 <div class="card" id="stage1">
-    <h2 style="margin-bottom:8px;">AI Smart Import</h2>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <h2 style="margin:0;">AI Smart Import</h2>
+        <button class="btn btn-secondary btn-sm" onclick="setGeminiKey()">🔑 Set API Key</button>
+    </div>
     <p class="text-muted">Masukkan data Anda via File Excel/CSV atau Paste Teks Bebas. AI akan memetakannya ke Database secara otomatis.</p>
     
     <div class="tab-buttons">
@@ -108,9 +117,17 @@
     </script>
 
 <script>
-// GEMINI API KEY (Gunakan gemini-1.5-flash karena 3.5 belum ada/akan melempar error 404 API)
-const GEMINI_API_KEY = "AQ.Ab8RN6K4I3LYu9OAFP--oupnpzUj20-jq_m3R1Zqppv3468d7A";
+// GEMINI API KEY kini disimpan di localStorage untuk keamanan
 const MODEL_NAME = "gemini-1.5-flash";
+
+function setGeminiKey() {
+    const currentKey = localStorage.getItem('gemini_api_key') || '';
+    const newKey = prompt('Masukkan Gemini API Key Anda:\n(Key hanya akan disimpan di browser Anda)', currentKey);
+    if (newKey !== null) {
+        localStorage.setItem('gemini_api_key', newKey.trim());
+        alert('API Key berhasil disimpan di browser!');
+    }
+}
 
 let participantColumns = [];
 let parsedHeaders = [];
@@ -249,7 +266,13 @@ document.getElementById('btnAnalyze').addEventListener('click', async () => {
     let aiMapping = {};
     
     try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
+        const apiKey = localStorage.getItem('gemini_api_key');
+        if (!apiKey) {
+            alert('Kunci API Gemini belum diatur. Silakan klik tombol "Set API Key" di atas.');
+            throw new Error('API Key kosong');
+        }
+        
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`;
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
