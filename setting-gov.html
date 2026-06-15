@@ -321,7 +321,7 @@ function updatePreview(field) {
 const checkFb = setInterval(() => {
     if(window.fbDb) {
         clearInterval(checkFb);
-        window.fbOnValue(window.fbRef(window.fbDb, 'settings/print_gov'), (snapshot) => {
+        window.fbOnValue(window.getAppRef('settings/print_gov'), (snapshot) => {
             const data = snapshot.val();
             if(data) {
                 ['nomor', 'name', 'category', 'sekolah'].forEach(f => {
@@ -338,7 +338,7 @@ const checkFb = setInterval(() => {
                 });
             }
         });
-        window.fbOnValue(window.fbRef(window.fbDb, 'settings/background_gov'), (snapshot) => {
+        window.fbOnValue(window.getAppRef('settings/background_gov'), (snapshot) => {
             const bg = snapshot.val();
             if(bg) {
                 document.getElementById('print-preview-area').style.backgroundImage = `url('${bg}')`;
@@ -375,7 +375,7 @@ async function saveSettings() {
         };
     });
     
-    await window.fbSet(window.fbRef(window.fbDb, 'settings/print_gov'), data);
+    await window.fbSet(window.getAppRef('settings/print_gov'), data);
     document.getElementById('save-status').innerText = '✅ Tersimpan ke Firebase!';
     setTimeout(() => document.getElementById('save-status').innerText = '', 2000);
 }
@@ -393,7 +393,7 @@ async function uploadBg() {
     reader.onload = async function(e) {
         const base64 = e.target.result;
         try {
-            await window.fbSet(window.fbRef(window.fbDb, 'settings/background_gov'), base64);
+            await window.fbSet(window.getAppRef('settings/background_gov'), base64);
             alert('Background berhasil diunggah dan tersimpan di Firebase!');
         } catch(err) {
             alert('Gagal mengunggah: Pastikan ukuran gambar tidak terlalu besar (Maks ~1MB untuk Realtime DB).');

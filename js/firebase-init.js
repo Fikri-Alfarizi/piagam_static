@@ -28,4 +28,13 @@ window.fbEqualTo = equalTo;
 window.fbLimitToLast = limitToLast;
 window.fbLimitToFirst = limitToFirst;
 
+window.getAppRef = function(path) {
+    let t = localStorage.getItem('active_tournament') || 'default';
+    if (t === 'default') {
+        return ref(db, path);
+    } else {
+        return ref(db, `tournaments_data/${t}/${path}`);
+    }
+};
+
 export { db, ref, onValue, set, push, remove, update, get, query, orderByChild, equalTo, limitToLast, limitToFirst };

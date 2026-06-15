@@ -26,28 +26,24 @@
                         <div class="card">
                             <h2>Mode Input Cepat</h2>
                             <form id="fast-input-form" onsubmit="return false;">
+                                <div class="form-group" style="margin-bottom: 15px;">
+                                    <label style="font-weight:600; font-size:13px;">Pilih Template Piagam</label>
+                                    <select id="template_select" style="width:100%; padding:8px; border:1px solid var(--border); border-radius:4px; font-weight: 500; color: #333;">
+                                        <option value="default">Memuat template...</option>
+                                    </select>
+                                    <div id="template_preview_container" style="display:none; margin-top:10px; text-align:center; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 8px; border: 1px dashed var(--border);">
+                                        <img id="template_preview_img" src="" style="max-width: 100%; max-height: 150px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); object-fit: contain;">
+                                    </div>
+                                </div>
                                 <div class="form-group autocomplete-container">
                                     <label>Nama Peserta</label>
-                                    <input type="text" id="participant_name" name="participant_name" autocomplete="off" required autofocus>
+                                    <input type="text" id="participant_name" name="participant_name" autocomplete="off" required autofocus placeholder="Ketik nama untuk mencari...">
                                     <ul id="autocomplete-list" class="autocomplete-list" style="display:none;"></ul>
                                 </div>
-                                <div class="form-group">
-                                    <label>Nomor Peserta/Piagam (Opsional)</label>
-                                    <input type="text" id="nomor" name="nomor" placeholder="Contoh: 299 /O2SN...">
+                                <div id="dynamic-inputs">
+                                    <!-- Dynamic inputs based on template will be injected here -->
                                 </div>
-                                <div class="form-group">
-                                    <label>Juara (Opsional)</label>
-                                    <input type="text" id="category" name="category" placeholder="Contoh: Juara 1...">
-                                </div>
-                                <div class="form-group" style="display:flex; align-items:center;">
-                                    <input type="checkbox" id="is_gov" name="is_gov" style="margin-right:8px; cursor:pointer;" onchange="document.getElementById('sekolah-group').style.display = this.checked ? 'block' : 'none'">
-                                    <label for="is_gov" style="margin:0; cursor:pointer; font-weight:600;">Pakai Sekolah (Piagam Pemerintah)</label>
-                                </div>
-                                <div class="form-group" id="sekolah-group" style="display:none; margin-top:10px;">
-                                    <label>Asal Sekolah (Untuk Print Pemerintah)</label>
-                                    <input type="text" id="asal_sekolah" name="asal_sekolah" placeholder="Otomatis terisi...">
-                                </div>
-                                <button type="button" id="btn-submit" class="btn btn-primary" style="margin-top:5px;">Masukkan Antrean (Enter)</button>
+                                <button type="button" id="btn-submit" class="btn btn-primary" style="margin-top:5px; width: 100%;">Masukkan Antrean (Enter)</button>
                             </form>
                             <div class="mt-2">
                                 <small class="text-muted">

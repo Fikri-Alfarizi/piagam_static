@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Batch Print Piagam</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Alex+Brush&family=Allura&family=Cinzel:wght@400;700&family=Dancing+Script&family=Great+Vibes&family=Lora:ital,wght@0,400;0,700;1,400&family=Merriweather:wght@400;700&family=Montserrat:wght@400;600;700&family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;600&family=Parisienne&family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Poppins:wght@400;600;700&family=PT+Serif:wght@400;700&family=Roboto:wght@400;500;700&family=Tangerine:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/print.css">
     <script type="module" src="js/firebase-init.js"></script>
     <style>
@@ -107,35 +108,21 @@
             if(window.fbDb) {
                 clearInterval(checkFb);
                 const urlParams = new URLSearchParams(window.location.search);
-                const isGov = urlParams.get('type') === 'gov';
+                const filterTemplate = urlParams.get('template');
                 
-                // Get Settings first
-                let settings = {};
-                const settingsPath = isGov ? 'settings/print_gov' : 'settings/print';
-                const snapSettings = await window.fbGet(window.fbRef(window.fbDb, settingsPath));
-                if(snapSettings.val()) settings = snapSettings.val();
-                
-                // Get Background
-                let bgUrl = '';
-                const bgPath = isGov ? 'settings/background_gov' : 'settings/background';
-                const snapBg = await window.fbGet(window.fbRef(window.fbDb, bgPath));
-                if(snapBg.val()) bgUrl = snapBg.val();
-
                 // Get Queues
-                const snapQueue = await window.fbGet(window.fbRef(window.fbDb, 'queue'));
+                const snapQueue = await window.fbGet(window.getAppRef('queue'));
                 const qData = snapQueue.val();
                 let pending = [];
                 if(qData) {
                     const singleId = urlParams.get('id');
-                    
                     let allQs = Object.keys(qData).map(k => ({id: k, ...qData[k]}));
                     if (singleId) {
                         pending = allQs.filter(q => q.id === singleId);
                     } else {
-                        if (isGov) {
-                            pending = allQs.filter(q => q.status === 'pending' && q.is_gov === true);
-                        } else {
-                            pending = allQs.filter(q => q.status === 'pending' && q.is_gov !== true);
+                        pending = allQs.filter(q => q.status === 'pending');
+                        if (filterTemplate) {
+                            pending = pending.filter(q => (q.template_id || 'default') === filterTemplate);
                         }
                         pending.sort((a,b) => a.timestamp - b.timestamp);
                     }
@@ -148,38 +135,71 @@
                     return;
                 }
                 
+                // Pre-fetch settings & backgrounds for all unique template_ids in pending
+                const uniqueTemplates = [...new Set(pending.map(q => q.template_id || 'default'))];
+                const templatesData = {};
+                for (const tId of uniqueTemplates) {
+                    const sPath = tId === 'default' ? 'settings/print' : `settings/templates/${tId}/print`;
+                    const bPath = tId === 'default' ? 'settings/background' : `settings/templates/${tId}/background`;
+                    
+                    const [sSnap, bSnap] = await Promise.all([
+                        window.fbGet(window.getAppRef(sPath)),
+                        window.fbGet(window.getAppRef(bPath))
+                    ]);
+                    
+                    templatesData[tId] = {
+                        settings: sSnap.val() || {},
+                        bgUrl: bSnap.val() || ''
+                    };
+                }
+                
                 let html = '';
                 pending.forEach(q => {
-                    const nSet = settings.name || { x_pos:0, y_pos:0, font_size:24, align:'center', font_family:'Arial', is_bold:0, color:'#000' };
-                    const cSet = settings.category || { x_pos:0, y_pos:0, font_size:24, align:'center', font_family:'Arial', is_bold:0, color:'#000' };
-                    const numSet = settings.nomor || { x_pos:0, y_pos:0, font_size:18, align:'center', font_family:'Arial', is_bold:0, color:'#000' };
-                    const sekSet = settings.sekolah || { x_pos:0, y_pos:0, font_size:24, align:'center', font_family:'Arial', is_bold:0, color:'#000' };
+                    const qTplId = q.template_id || 'default';
+                    const qDataTemplates = templatesData[qTplId] || { settings: {}, bgUrl: '' };
+                    const settings = qDataTemplates.settings;
+                    const bUrl = qDataTemplates.bgUrl;
+                    const pBgStyle = bUrl ? `background-image: url('${bUrl}');` : '';
                     
-                    loadGoogleFont(nSet.font_family);
-                    loadGoogleFont(cSet.font_family);
-                    if(isGov) loadGoogleFont(numSet.font_family);
-                    if(isGov) loadGoogleFont(sekSet.font_family);
-                    const nFallback = nSet.font_family === 'Times New Roman' ? 'serif' : 'sans-serif';
-                    const cFallback = cSet.font_family === 'Times New Roman' ? 'serif' : 'sans-serif';
-                    const numFallback = isGov && numSet.font_family === 'Times New Roman' ? 'serif' : 'sans-serif';
-                    const sekFallback = isGov && sekSet.font_family === 'Times New Roman' ? 'serif' : 'sans-serif';
+                    // Map element IDs to queue data
+                    let dataMap = {
+                        'name': q.participant_name || ''
+                    };
+                    if(q.dynamic_data) {
+                        dataMap = { ...dataMap, ...q.dynamic_data };
+                    }
+
+                    // Build elements HTML dynamically
+                    let elementsHtml = '';
                     
-                    const nStyle = `left:${nSet.x_pos}px; top:${nSet.y_pos}px; font-size:${nSet.font_size}px; text-align:${nSet.align}; font-weight:${nSet.is_bold ? 'bold':'normal'}; color:${nSet.color}; font-family:'${nSet.font_family}', ${nFallback};`;
-                    const cStyle = `left:${cSet.x_pos}px; top:${cSet.y_pos}px; font-size:${cSet.font_size}px; text-align:${cSet.align}; font-weight:${cSet.is_bold ? 'bold':'normal'}; color:${cSet.color}; font-family:'${cSet.font_family}', ${cFallback};`;
-                    const numStyle = `left:${numSet.x_pos}px; top:${numSet.y_pos}px; font-size:${numSet.font_size}px; text-align:${numSet.align}; font-weight:${numSet.is_bold ? 'bold':'normal'}; color:${numSet.color}; font-family:'${numSet.font_family}', ${numFallback};`;
-                    const sekStyle = `left:${sekSet.x_pos}px; top:${sekSet.y_pos}px; font-size:${sekSet.font_size}px; text-align:${sekSet.align}; font-weight:${sekSet.is_bold ? 'bold':'normal'}; color:${sekSet.color}; font-family:'${sekSet.font_family}', ${sekFallback}; position:absolute; width:100%;`;
-                    
-                    const pageBgStyle = bgUrl ? `background-image: url('${bgUrl}');` : '';
+                    if (settings._elements) {
+                        // New dynamic format
+                        settings._elements.forEach(elSetting => {
+                            const text = dataMap[elSetting.id] || dataMap[elSetting.label] || '';
+                            if (!text) return;
+                            const fb = elSetting.font_family === 'Times New Roman' ? 'serif' : 'sans-serif';
+                            loadGoogleFont(elSetting.font_family);
+                            const style = `position:absolute; width:100%; left:${elSetting.x_pos}px; top:${elSetting.y_pos}px; font-size:${elSetting.font_size}px; text-align:${elSetting.align}; font-weight:${elSetting.is_bold?'bold':'normal'}; color:${elSetting.color}; font-family:'${elSetting.font_family}',${fb};`;
+                            elementsHtml += `<div style="${style}">${escapeHTML(text)}</div>`;
+                        });
+                    } else {
+                        // Legacy format fallback
+                        Object.keys(settings).forEach(key => {
+                            if (key.startsWith('_')) return;
+                            const text = dataMap[key] || '';
+                            if (!text) return;
+                            const s = settings[key];
+                            const fb = s.font_family === 'Times New Roman' ? 'serif' : 'sans-serif';
+                            loadGoogleFont(s.font_family);
+                            const style = `position:absolute; width:100%; left:${s.x_pos}px; top:${s.y_pos}px; font-size:${s.font_size}px; text-align:${s.align}; font-weight:${s.is_bold?'bold':'normal'}; color:${s.color}; font-family:'${s.font_family}',${fb};`;
+                            elementsHtml += `<div style="${style}">${escapeHTML(text)}</div>`;
+                        });
+                    }
 
                     html += `
                         <div class="print-wrapper">
-                            <div class="print-page" style="${pageBgStyle}">
-                                ${(isGov && q.nomor) ? `<div class="field-nomor" style="${numStyle}">${escapeHTML(q.nomor)}</div>` : ''}
-                                <div class="field-name" style="${nStyle}">
-                                    ${escapeHTML(q.participant_name)}
-                                </div>
-                                ${q.category ? `<div class="field-category" style="${cStyle}">${escapeHTML(q.category)}</div>` : ''}
-                                ${(isGov && q.asal_sekolah) ? `<div class="field-sekolah" style="${sekStyle}">${escapeHTML(q.asal_sekolah)}</div>` : ''}
+                            <div class="print-page" style="${pBgStyle}">
+                                ${elementsHtml}
                             </div>
                         </div>
                     `;

@@ -3,9 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Print Piagam</title>
+    <title>Data Editor - PiagamFast</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Apple-like Minimalist Spreadsheet Styles */
+        .sheet-container {
+            width: 100%; overflow-x: auto; overflow-y: hidden;
+            background: #fff; border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            border: 1px solid #eaeaea; margin-top: 16px;
+        }
+        .sheet-table {
+            width: 100%; border-collapse: collapse; min-width: 800px;
+            font-size: 13px; table-layout: auto;
+        }
+        .sheet-table th {
+            background: #fbfbfd; color: #86868b;
+            font-weight: 600; text-transform: none; letter-spacing: 0;
+            padding: 12px 16px; border-bottom: 1px solid #eaeaea;
+            border-right: 1px solid #eaeaea; text-align: left;
+            position: relative; white-space: nowrap; user-select: none;
+        }
+        .sheet-table th:last-child { border-right: none; }
+        .sheet-table td {
+            border-bottom: 1px solid #eaeaea; border-right: 1px solid #eaeaea;
+            padding: 0; position: relative;
+        }
+        .sheet-table td:last-child { border-right: none; }
+        
+        /* The input cell */
+        .cell-input {
+            width: 100%; height: 100%; min-height: 40px;
+            border: none; background: transparent;
+            padding: 10px 16px; font-family: inherit; font-size: 13px;
+            color: #1d1d1f; outline: none; box-sizing: border-box;
+            transition: background 0.2s;
+        }
+        .cell-input:focus { background: #f5f5f7; box-shadow: inset 0 0 0 2px #0071e3; border-radius: 2px; }
+        
+        .col-actions {
+            opacity: 0; position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+            transition: opacity 0.2s; display: flex; gap: 4px;
+        }
+        .sheet-table th:hover .col-actions { opacity: 1; }
+        .btn-icon { background: none; border: none; cursor: pointer; color: #86868b; font-size: 12px; padding: 4px; border-radius: 4px; transition: background 0.15s, color 0.15s; }
+        .btn-icon:hover { background: #e8e8ed; color: #1d1d1f; }
+        .btn-icon.danger:hover { background: #fef2f2; color: #dc2828; }
+        
+        .btn-add-col { background: transparent; color: #0071e3; border: 1px dashed #d2d2d7; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-weight: 500; font-size: 12px; width: max-content; }
+        .btn-add-col:hover { background: #f5f5f7; border-color: #0071e3; }
+        
+        .btn-add-row { width: 100%; background: transparent; color: #0071e3; border: none; padding: 12px; text-align: left; padding-left: 16px; cursor: pointer; font-weight: 500; font-size: 13px; }
+        .btn-add-row:hover { background: #fbfbfd; }
+    </style>
 </head>
 <body>
     <div class="app-layout">
@@ -20,114 +71,43 @@
             </nav>
         </aside>
         <main class="main-content">
-            <div class="container">
+            <div class="container" style="max-width: 1200px;">
                 <div id="toast" class="toast"></div>
 
-<div class="row" style="flex-direction: column;">
-    <div style="width:100%;">
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2>Database Peserta</h2>
-                <div style="display:flex; gap:10px; align-items:center;">
-                    <input type="text" id="search-input" placeholder="Cari nama..." style="padding:6px 12px; border:1px solid #ccc; border-radius:4px; font-size:13px;">
-                    <button type="button" id="btn-clear-all" class="btn btn-danger btn-sm">🗑️ Hapus Semua</button>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h2>Data Peserta</h2>
+                        <p style="font-size:13px; color:#86868b; margin-top:-10px;">Editor Spreadsheet Dinamis. Auto-save ke Firebase.</p>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="text" id="search-input" placeholder="Cari data..." style="padding:8px 16px; border:1px solid #d2d2d7; border-radius:8px; font-size:13px; outline:none; transition:box-shadow 0.2s;">
+                        <button type="button" onclick="clearAllData()" class="btn btn-danger btn-sm" style="border-radius:8px;">🗑️ Kosongkan Data</button>
+                    </div>
                 </div>
-            </div>
-            <p style="font-size:12px; color:#666;">Data master peserta. Terhubung secara real-time via Firebase.</p>
-            
-            <div style="width:100%; overflow-x:auto; border:1px solid #ddd; border-radius:4px; margin-top:15px;">
-                <table style="width:100%; border-collapse:collapse; font-size:12px; min-width:1000px; white-space:nowrap;">
-                    <thead>
-                        <tr style="background:#f1f5f9; text-align:left; color:#333;">
-                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd; width:40px; text-align:center;">#</th>
-                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">No.</th>
-                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd; min-width:120px;">Nama Lengkap</th>
-                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">NISN</th>
-                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">Sabuk</th>
-                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">Kategori</th>
-                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd; text-align:center;">L/P</th>
-                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">Asal Sekolah</th>
-                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">Jenjang</th>
-                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">Kecamatan</th>
-                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">Kelas</th>
-                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd;">BB/TB</th>
-                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd; text-align:center;">Status Print</th>
-                            <th style="padding:8px; border:1px solid #ddd; border-bottom:2px solid #ddd; text-align:center;">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="participants-tbody">
-                        <tr>
-                            <td colspan="14" style="padding:20px; text-align:center; color:#999;">Memuat data dari Firebase...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
-                <span id="page-info" style="font-size:13px; color:#666;"></span>
-                <div id="pagination-controls" style="display:flex; gap:5px;"></div>
-            </div>
-        </div>
-    </div>
-    
-    <div style="width:100%;">
-        <div class="card">
-            <h3 style="margin-bottom:15px;">Tambah Peserta Manual</h3>
-            <form id="add-participant-form" onsubmit="return false;" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:15px; align-items:flex-end;">
-                <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:12px;">No.</label>
-                    <input type="text" id="new_nomor" autocomplete="off" placeholder="No.">
+                
+                <div class="sheet-container">
+                    <table class="sheet-table">
+                        <thead id="sheet-head">
+                            <tr>
+                                <th>Memuat kolom...</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sheet-body">
+                            <tr><td style="padding:20px; text-align:center; color:#86868b;">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                    <button class="btn-add-row" onclick="addRow()">+ Tambah Baris Baru</button>
                 </div>
-                <div class="form-group" style="margin-bottom:0; grid-column: span 2;">
-                    <label style="font-size:12px;">Nama Lengkap</label>
-                    <input type="text" id="new_name" required autocomplete="off" placeholder="Nama">
+                
+                <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
+                    <span id="page-info" style="font-size:13px; color:#86868b;"></span>
+                    <div id="pagination-controls" style="display:flex; gap:5px;"></div>
                 </div>
-                <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:12px;">NISN</label>
-                    <input type="text" id="new_nisn" autocomplete="off" placeholder="NISN">
-                </div>
-                <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:12px;">Sabuk</label>
-                    <input type="text" id="new_sabuk" autocomplete="off" placeholder="Sabuk">
-                </div>
-                <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:12px;">Kategori</label>
-                    <input type="text" id="new_kategori" autocomplete="off" placeholder="Kategori">
-                </div>
-                <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:12px;">L/P</label>
-                    <input type="text" id="new_jk" autocomplete="off" placeholder="L/P">
-                </div>
-                <div class="form-group" style="margin-bottom:0; grid-column: span 2;">
-                    <label style="font-size:12px;">Asal Sekolah</label>
-                    <input type="text" id="new_asal" autocomplete="off" placeholder="Asal Sekolah">
-                </div>
-                <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:12px;">Jenjang</label>
-                    <input type="text" id="new_jenjang" autocomplete="off" placeholder="SD/SMP/SMA">
-                </div>
-                <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:12px;">Kecamatan</label>
-                    <input type="text" id="new_kecamatan" autocomplete="off" placeholder="Kecamatan">
-                </div>
-                <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:12px;">Kelas</label>
-                    <input type="text" id="new_kelas" autocomplete="off" placeholder="Kelas">
-                </div>
-                <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:12px;">BB/TB</label>
-                    <input type="text" id="new_bbtb" autocomplete="off" placeholder="BB/TB">
-                </div>
-                <div class="form-group" style="margin-bottom:0; grid-column: 1 / -1;">
-                    <button type="submit" id="btn-add" class="btn btn-primary" style="width:100%; padding:12px;">+ Tambah Peserta Manual</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
             </div>
         </main>
     </div>
+
     <script type="module" src="js/firebase-init.js"></script>
     <script src="js/app.js"></script>
     <script>
@@ -140,176 +120,204 @@
     </script>
 <script>
 (() => {
+// --- STATE ---
+let columns = [];
 let allParticipants = [];
-let queuesData = [];
 let currentPage = 1;
 let itemsPerPage = 50;
 let searchQuery = '';
 
-window.changePage = (delta) => {
-    currentPage += delta;
-    renderTable();
-};
+// Default fallback columns if empty
+const defaultColumns = [
+    { id: 'name', label: 'Nama Lengkap' },
+    { id: 'asal_sekolah', label: 'Asal Sekolah' },
+    { id: 'kategori', label: 'Kategori' },
+    { id: 'nomor', label: 'Nomor Piagam' }
+];
 
-function renderTable() {
-    const tbody = document.getElementById('participants-tbody');
-    let filtered = allParticipants;
-    if (searchQuery) {
-        const lower = searchQuery.toLowerCase();
-        filtered = filtered.filter(p => p.name.toLowerCase().includes(lower));
-    }
-    
-    const totalItems = filtered.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-    if (currentPage > totalPages) currentPage = totalPages;
-    
-    const startIdx = (currentPage - 1) * itemsPerPage;
-    const paged = filtered.slice(startIdx, startIdx + itemsPerPage);
-    
-    let html = '';
-    if (paged.length === 0) {
-        html = '<tr><td colspan="14" style="padding:20px; text-align:center; color:#999;">Data peserta tidak ditemukan.</td></tr>';
-    } else {
-        paged.forEach((p, idx) => {
-            // Cek Status
-            const itemQueues = queuesData.filter(q => q.participant_name === p.name);
-            let status = 'Belum Antre';
-            if(itemQueues.some(q => q.status === 'pending')) status = 'Di Antrean';
-            else if(itemQueues.some(q => q.status === 'printed')) status = 'Sudah Dicetak';
-            
-            let badgeColor = status === 'Di Antrean' ? '#f39c12' : (status === 'Sudah Dicetak' ? '#27ae60' : '#bdc3c7');
-            let badgeHtml = `<span class="badge" style="background:${badgeColor}; color:#fff; font-size:10px; white-space:nowrap; padding:3px 6px;">${status}</span>`;
-            
-            const nomorValue = p.nomor ? escapeHTML(p.nomor) : '';
-            const nisnValue = p.nisn ? escapeHTML(p.nisn) : '';
-            const sabukValue = p.sabuk ? escapeHTML(p.sabuk) : '';
-            const kategoriValue = p.kategori ? escapeHTML(p.kategori) : '';
-            const jkValue = p.jk ? escapeHTML(p.jk) : '';
-            const asalValue = p.asal_sekolah ? escapeHTML(p.asal_sekolah) : '';
-            const jenjangValue = p.jenjang ? escapeHTML(p.jenjang) : '';
-            const kecValue = p.kecamatan ? escapeHTML(p.kecamatan) : '';
-            const kelasValue = p.kelas ? escapeHTML(p.kelas) : '';
-            const bbtbValue = p.bbtb ? escapeHTML(p.bbtb) : '';
-            
-            html += `
-            <tr style="border-bottom:1px solid #eee; transition:background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-                <td style="padding:6px 8px; border:1px solid #eee; text-align:center;">${startIdx + idx + 1}</td>
-                <td style="padding:6px 8px; border:1px solid #eee;">
-                    <input type="text" id="edit_nomor_${p.id}" value="${nomorValue}" style="width:100%; border:1px solid transparent; background:transparent; padding:2px 4px; font-size:11px;" onfocus="this.style.border='1px solid #3498db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';" oninput="document.getElementById('btn_save_${p.id}').style.display='inline-block'">
-                </td>
-                <td style="padding:6px 8px; border:1px solid #eee;">
-                    <div style="display:flex; flex-direction:column; gap:4px;">
-                        <input type="text" id="edit_name_${p.id}" value="${escapeHTML(p.name)}" placeholder="Nama" style="width:100%; min-width:150px; border:1px solid transparent; background:transparent; padding:2px 4px; font-size:12px; font-weight:500; color:#111;" onfocus="this.style.border='1px solid #3498db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';" oninput="document.getElementById('btn_save_${p.id}').style.display='inline-block'">
-                        <button id="btn_save_${p.id}" class="btn btn-primary btn-sm" style="display:none; align-self:flex-start; padding:2px 6px; font-size:10px;" onclick="updateParticipant('${p.id}')">Simpan Edit</button>
-                    </div>
-                </td>
-                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555;">${nisnValue}</td>
-                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555;">${sabukValue}</td>
-                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555;">${kategoriValue}</td>
-                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555; text-align:center;">${jkValue}</td>
-                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555;">${asalValue}</td>
-                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555;">${jenjangValue}</td>
-                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555;">${kecValue}</td>
-                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555;">${kelasValue}</td>
-                <td style="padding:6px 8px; border:1px solid #eee; font-size:11px; color:#555;">${bbtbValue}</td>
-                <td style="padding:6px 8px; border:1px solid #eee; text-align:center;">${badgeHtml}</td>
-                <td style="padding:6px 8px; border:1px solid #eee; text-align:center;">
-                    <button class="btn btn-danger" style="padding:4px 8px; font-size:11px;" onclick="deleteParticipant('${p.id}')">Hapus</button>
-                </td>
-            </tr>`;
-        });
-    }
-    tbody.innerHTML = html;
-    
-    // Pagination Info
-    document.getElementById('page-info').innerText = `Menampilkan ${startIdx + 1} - ${Math.min(startIdx + itemsPerPage, totalItems)} dari ${totalItems} baris`;
-    
-    // Pagination Controls
-    let pagesHtml = '';
-    if(currentPage > 1) pagesHtml += `<button class="btn btn-secondary btn-sm" onclick="changePage(-1)">Prev</button>`;
-    if(currentPage < totalPages) pagesHtml += `<button class="btn btn-secondary btn-sm" onclick="changePage(1)">Next</button>`;
-    document.getElementById('pagination-controls').innerHTML = pagesHtml;
-}
-
-// Firebase Listeners
 const checkFb = setInterval(() => {
     if(window.fbDb) {
         clearInterval(checkFb);
-        window.fbOnValue(window.fbRef(window.fbDb, 'participants'), (snapshot) => {
-            const data = snapshot.val();
-            // Urutkan dari yang terbaru (anggap id ter-push terbaru)
-            allParticipants = data ? Object.keys(data).map(k => ({id: k, ...data[k]})).reverse() : [];
-            renderTable();
+        
+        // Listen to columns
+        window.fbOnValue(window.getAppRef('participant_columns'), (snap) => {
+            const data = snap.val();
+            if(data) {
+                columns = data;
+            } else {
+                // If not exist, save default columns
+                window.fbSet(window.getAppRef('participant_columns'), defaultColumns);
+                columns = defaultColumns;
+            }
+            renderSheet();
         });
-        window.fbOnValue(window.fbRef(window.fbDb, 'queue'), (snapshot) => {
-            const data = snapshot.val();
-            queuesData = data ? Object.keys(data).map(k => ({id: k, ...data[k]})) : [];
-            renderTable();
+
+        // Listen to rows
+        window.fbOnValue(window.getAppRef('participants'), (snap) => {
+            const data = snap.val();
+            allParticipants = data ? Object.keys(data).map(k => ({id: k, ...data[k]})) : [];
+            // Sort by timestamp desc if available
+            allParticipants.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+            renderSheet();
         });
     }
 }, 50);
 
-// Search
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 3000);
+}
+
+// --- COLUMNS ---
+window.addColumn = async () => {
+    const name = prompt('Nama kolom baru:');
+    if(!name) return;
+    const id = name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    // Ensure unique
+    if(columns.find(c => c.id === id)) {
+        return alert('Nama kolom sudah ada atau bentrok.');
+    }
+    columns.push({ id, label: name });
+    await window.fbSet(window.getAppRef('participant_columns'), columns);
+};
+
+window.renameColumn = async (id) => {
+    if(id === 'name') return alert('Kolom Nama Lengkap tidak bisa diubah karena merupakan kunci wajib.');
+    const col = columns.find(c => c.id === id);
+    const newName = prompt('Ubah nama kolom:', col.label);
+    if(!newName || newName === col.label) return;
+    col.label = newName;
+    await window.fbSet(window.getAppRef('participant_columns'), columns);
+};
+
+window.deleteColumn = async (id) => {
+    if(id === 'name') return alert('Kolom Nama Lengkap tidak bisa dihapus.');
+    if(!confirm('Hapus kolom ini secara permanen? Data peserta pada kolom ini tidak akan ikut terhapus di database, tapi tidak akan ditampilkan.')) return;
+    columns = columns.filter(c => c.id !== id);
+    await window.fbSet(window.getAppRef('participant_columns'), columns);
+};
+
+// --- ROWS ---
+window.addRow = async () => {
+    const id = 'p_' + Date.now();
+    const newData = { id, timestamp: Date.now(), name: '' };
+    await window.fbSet(window.getAppRef(`participants/${id}`), newData);
+};
+
+window.deleteRow = async (id) => {
+    if(confirm('Hapus baris ini?')) {
+        await window.fbRemove(window.getAppRef(`participants/${id}`));
+    }
+};
+
+window.updateCell = async (id, colId, value) => {
+    if(!id) return;
+    await window.fbUpdate(window.getAppRef(`participants/${id}`), { [colId]: value });
+};
+
+// --- RENDERING ---
+function renderSheet() {
+    if(!columns.length) return;
+    
+    // RENDER HEAD
+    let thead = '<tr><th style="width:40px; text-align:center;">#</th>';
+    columns.forEach(c => {
+        const isName = c.id === 'name';
+        thead += `
+            <th>
+                ${escapeHTML(c.label)}
+                ${!isName ? `
+                <div class="col-actions">
+                    <button class="btn-icon" onclick="renameColumn('${c.id}')" title="Rename">✏️</button>
+                    <button class="btn-icon danger" onclick="deleteColumn('${c.id}')" title="Hapus">🗑️</button>
+                </div>` : ''}
+            </th>
+        `;
+    });
+    thead += `
+        <th style="width:100px; text-align:center;">
+            <button class="btn-add-col" onclick="addColumn()">➕ Kolom</button>
+        </th>
+    </tr>`;
+    document.getElementById('sheet-head').innerHTML = thead;
+    
+    // FILTER & PAGINATE
+    let filtered = allParticipants;
+    if (searchQuery) {
+        const lower = searchQuery.toLowerCase();
+        filtered = filtered.filter(p => {
+            // search across all columns
+            return columns.some(c => p[c.id] && String(p[c.id]).toLowerCase().includes(lower));
+        });
+    }
+    
+    const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    const paged = filtered.slice(startIdx, startIdx + itemsPerPage);
+    
+    // RENDER BODY
+    let tbody = '';
+    if(paged.length === 0) {
+        tbody = `<tr><td colspan="${columns.length + 2}" style="padding:20px; text-align:center; color:#86868b;">Tidak ada data.</td></tr>`;
+    } else {
+        paged.forEach((p, idx) => {
+            let rowHtml = `<td style="text-align:center; color:#86868b; border-right: 1px solid #eaeaea; border-bottom: 1px solid #eaeaea;">${startIdx + idx + 1}</td>`;
+            columns.forEach(c => {
+                const val = p[c.id] || '';
+                rowHtml += `
+                    <td>
+                        <input type="text" class="cell-input" value="${escapeHTML(val)}" 
+                            onblur="if(this.value !== '${escapeHTML(val).replace(/'/g, "\\'")}') updateCell('${p.id}', '${c.id}', this.value)"
+                            placeholder="Ketik...">
+                    </td>
+                `;
+            });
+            rowHtml += `
+                <td style="text-align:center; vertical-align:middle; border-bottom: 1px solid #eaeaea;">
+                    <button class="btn-icon danger" onclick="deleteRow('${p.id}')" title="Hapus Baris" style="font-size:14px; padding:6px;">🗑️</button>
+                </td>
+            `;
+            tbody += `<tr>${rowHtml}</tr>`;
+        });
+    }
+    document.getElementById('sheet-body').innerHTML = tbody;
+    
+    // PAGINATION
+    document.getElementById('page-info').innerText = `Menampilkan ${startIdx + 1}-${Math.min(startIdx + itemsPerPage, filtered.length)} dari ${filtered.length} peserta`;
+    let btnHtml = '';
+    if (currentPage > 1) btnHtml += `<button class="btn btn-secondary btn-sm" onclick="changePage(-1)">Sebelumnya</button>`;
+    if (currentPage < totalPages) btnHtml += `<button class="btn btn-secondary btn-sm" onclick="changePage(1)">Selanjutnya</button>`;
+    document.getElementById('pagination-controls').innerHTML = btnHtml;
+}
+
+window.changePage = (delta) => {
+    currentPage += delta;
+    renderSheet();
+};
+
 document.getElementById('search-input').addEventListener('input', (e) => {
     searchQuery = e.target.value;
     currentPage = 1;
-    renderTable();
+    renderSheet();
 });
 
-// Add
-document.getElementById('btn-add').addEventListener('click', async () => {
-    const name = document.getElementById('new_name').value.trim();
-    const nomor = document.getElementById('new_nomor').value.trim();
-    if(!name) return;
-    
-    // Check duplicate
-    if(allParticipants.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-        alert('Peserta ini sudah ada di database.');
-        return;
-    }
-    
-    await window.fbPush(window.fbRef(window.fbDb, 'participants'), {
-        name: name,
-        nomor: document.getElementById('new_nomor').value.trim(),
-        nisn: document.getElementById('new_nisn').value.trim(),
-        sabuk: document.getElementById('new_sabuk').value.trim(),
-        kategori: document.getElementById('new_kategori').value.trim(),
-        jk: document.getElementById('new_jk').value.trim(),
-        asal_sekolah: document.getElementById('new_asal').value.trim(),
-        jenjang: document.getElementById('new_jenjang').value.trim(),
-        kecamatan: document.getElementById('new_kecamatan').value.trim(),
-        kelas: document.getElementById('new_kelas').value.trim(),
-        bbtb: document.getElementById('new_bbtb').value.trim(),
-        timestamp: Date.now()
-    });
-    document.getElementById('add-participant-form').reset();
-    showToast('Peserta ditambahkan');
-});
-
-// Update
-window.updateParticipant = async (id) => {
-    const newName = document.getElementById(`edit_name_${id}`).value.trim();
-    const newNomor = document.getElementById(`edit_nomor_${id}`).value.trim();
-    if(!newName) return;
-    await window.fbUpdate(window.fbRef(window.fbDb, `participants/${id}`), { name: newName, nomor: newNomor });
-    showToast('Data diperbarui');
-};
-
-// Delete
-window.deleteParticipant = async (id) => {
-    if(confirm('Yakin hapus peserta ini?')) {
-        await window.fbRemove(window.fbRef(window.fbDb, `participants/${id}`));
-        showToast('Peserta dihapus');
+window.clearAllData = async () => {
+    if(confirm('HAPUS SEMUA DATA PESERTA PADA TURNAMEN INI SECARA PERMANEN?')) {
+        await window.fbRemove(window.getAppRef('participants'));
+        showToast('Semua data berhasil dihapus.');
     }
 };
 
-// Clear All
-document.getElementById('btn-clear-all').addEventListener('click', async () => {
-    if(confirm('PERINGATAN: Yakin hapus SEMUA data peserta?')) {
-        await window.fbRemove(window.fbRef(window.fbDb, 'participants'));
-        showToast('Semua dihapus');
-    }
-});
+function escapeHTML(str) {
+    if(!str) return '';
+    return String(str).replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    }[tag]));
+}
+
 })();
 </script>
 </body>

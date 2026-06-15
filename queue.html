@@ -26,8 +26,7 @@
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2>Daftar Antrean Print (Pending)</h2>
         <div style="display:flex; gap:8px;">
-            <button onclick="window.open('batch.html', '_blank')" class="btn btn-primary btn-sm">Cetak Masal Biasa</button>
-            <button onclick="window.open('batch.html?type=gov', '_blank')" class="btn btn-secondary btn-sm">Cetak Masal Pemerintah</button>
+            <button onclick="window.open('batch.html', '_blank')" class="btn btn-primary btn-sm">Cetak Masal Semua</button>
             <button onclick="clearQueue()" class="btn btn-danger btn-sm">Hapus Semua</button>
         </div>
     </div>
@@ -35,7 +34,7 @@
         <thead>
             <tr>
                 <th>Nama</th>
-                <th>Juara</th>
+                <th>Detail Data</th>
                 <th style="text-align:right;">Aksi</th>
             </tr>
         </thead>
@@ -51,12 +50,13 @@
 <div class="card mt-3">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2>Riwayat Cetak (Sudah Di-Print)</h2>
+        <button onclick="downloadHistoryCSV()" class="btn btn-secondary btn-sm">Download Riwayat (CSV)</button>
     </div>
     <table class="table mt-2">
         <thead>
             <tr>
                 <th>Nama</th>
-                <th>Juara</th>
+                <th>Detail Data</th>
                 <th style="text-align:right;">Aksi</th>
             </tr>
         </thead>
@@ -82,11 +82,19 @@
 <script>
 (() => {
 let queuesData = [];
+let templatesMeta = {};
 
+// Get templates meta to show friendly names
 const checkFb = setInterval(() => {
     if(window.fbDb) {
         clearInterval(checkFb);
-        window.fbOnValue(window.fbRef(window.fbDb, 'queue'), (snapshot) => {
+        
+        window.fbOnValue(window.getAppRef('settings/templates_meta'), (snap) => {
+            templatesMeta = snap.val() || {};
+            renderQueues(); // re-render if template name changes or loads
+        });
+        
+        window.fbOnValue(window.getAppRef('queue'), (snapshot) => {
             const data = snapshot.val();
             queuesData = data ? Object.keys(data).map(k => ({id: k, ...data[k]})) : [];
             queuesData.sort((a,b) => b.timestamp - a.timestamp);
@@ -99,72 +107,136 @@ function renderQueues() {
     const pending = queuesData.filter(q => q.status === 'pending');
     const printed = queuesData.filter(q => q.status === 'printed');
     
-    const pendingHtml = pending.length ? pending.map(q => `
+    function formatDynamicData(q) {
+        if (!q.dynamic_data) return escapeHTML(q.category || '-');
+        const vals = Object.values(q.dynamic_data).filter(v => v).slice(0, 3);
+        let str = vals.map(v => escapeHTML(v)).join(', ');
+        if (Object.keys(q.dynamic_data).length > 3) str += '...';
+        return str || '-';
+    }
+    
+    const pendingHtml = pending.length ? pending.map(q => {
+        const tplId = q.template_id || 'default';
+        const tplName = tplId === 'default' ? 'Piagam Default' : (templatesMeta[tplId]?.name || 'Template Baru');
+        return `
         <tr id="queue-${q.id}">
             <td>
                 ${escapeHTML(q.participant_name)}
-                <span class="badge" style="background:${q.is_gov ? '#9b59b6' : '#34495e'}; color:#fff; font-size:10px; margin-left:8px; padding:3px 6px; vertical-align:middle;">
-                    ${q.is_gov ? 'Pemerintah' : 'Biasa'}
+                <span class="badge" style="background:#34495e; color:#fff; font-size:10px; margin-left:8px; padding:3px 6px; vertical-align:middle;">
+                    ${escapeHTML(tplName)}
                 </span>
             </td>
-            <td>${escapeHTML(q.category)}</td>
-            <td style="text-align:right; min-width: 180px;">
+            <td><small>${formatDynamicData(q)}</small></td>
+            <td style="text-align:right; min-width: 150px;">
                 <button onclick="window.open('batch.html?id=${q.id}', '_blank')" class="btn btn-primary btn-sm">Print</button>
-                <button onclick="window.open('batch.html?id=${q.id}&type=gov', '_blank')" class="btn btn-secondary btn-sm">Print Gov</button>
                 <button onclick="deleteQueue('${q.id}')" class="btn btn-danger btn-sm">Hapus</button>
             </td>
         </tr>
-    `).join('') : '<tr><td colspan="3" style="text-align:center; color:#999;">Antrean kosong.</td></tr>';
+    `}).join('') : '<tr><td colspan="3" style="text-align:center; color:#999;">Antrean kosong.</td></tr>';
     
-    const printedHtml = printed.length ? printed.map(q => `
+    const printedHtml = printed.length ? printed.map(q => {
+        const tplId = q.template_id || 'default';
+        const tplName = tplId === 'default' ? 'Piagam Default' : (templatesMeta[tplId]?.name || 'Template Baru');
+        return `
         <tr id="queue-${q.id}">
             <td>
                 ${escapeHTML(q.participant_name)}
-                <span class="badge" style="background:${q.is_gov ? '#9b59b6' : '#34495e'}; color:#fff; font-size:10px; margin-left:8px; padding:3px 6px; vertical-align:middle;">
-                    ${q.is_gov ? 'Pemerintah' : 'Biasa'}
+                <span class="badge" style="background:#34495e; color:#fff; font-size:10px; margin-left:8px; padding:3px 6px; vertical-align:middle;">
+                    ${escapeHTML(tplName)}
                 </span>
             </td>
-            <td>${escapeHTML(q.category)}</td>
-            <td style="text-align:right; min-width: 250px;">
+            <td><small>${formatDynamicData(q)}</small></td>
+            <td style="text-align:right; min-width: 210px;">
                 <button onclick="window.open('batch.html?id=${q.id}', '_blank')" class="btn btn-primary btn-sm">Print Ulang</button>
-                <button onclick="window.open('batch.html?id=${q.id}&type=gov', '_blank')" class="btn btn-secondary btn-sm">Print Gov</button>
                 <button onclick="rollbackQueue('${q.id}')" class="btn btn-warning btn-sm">Rollback</button>
                 <button onclick="deleteQueue('${q.id}')" class="btn btn-danger btn-sm">Hapus</button>
             </td>
         </tr>
-    `).join('') : '<tr><td colspan="3" style="text-align:center; color:#999;">Belum ada riwayat.</td></tr>';
+    `}).join('') : '<tr><td colspan="3" style="text-align:center; color:#999;">Belum ada riwayat.</td></tr>';
     
     document.getElementById('pending-tbody').innerHTML = pendingHtml;
     document.getElementById('printed-tbody').innerHTML = printedHtml;
 }
 
-window.deleteQueue = async function deleteQueue(id) {
-    if(!confirm('Hapus dari daftar?')) return;
-    await window.fbRemove(window.fbRef(window.fbDb, `queue/${id}`));
-}
+window.deleteQueue = async (id) => {
+    if(confirm('Yakin hapus dari antrean?')) {
+        await window.fbRemove(window.getAppRef(`queue/${id}`));
+    }
+};
 
-window.clearQueue = async function clearQueue() {
-    if(!confirm('Bersihkan SEMUA antrean pending?')) return;
-    const pending = queuesData.filter(q => q.status === 'pending');
-    const updates = {};
-    pending.forEach(q => updates[q.id] = null);
-    await window.fbUpdate(window.fbRef(window.fbDb, 'queue'), updates);
-}
+window.clearQueue = async () => {
+    if(confirm('Hapus semua antrean (pending & riwayat)?')) {
+        let updates = {};
+        queuesData.forEach(q => updates[q.id] = null);
+        await window.fbUpdate(window.getAppRef('queue'), updates);
+    }
+};
 
-window.markAllPrinted = async function markAllPrinted() {
+window.markAllPrinted = async () => {
     const pending = queuesData.filter(q => q.status === 'pending');
     if(pending.length === 0) return;
-    if(!confirm('Tandai semua sebagai sudah dicetak?')) return;
-    
-    const updates = {};
-    pending.forEach(q => updates[q.id + '/status'] = 'printed');
-    await window.fbUpdate(window.fbRef(window.fbDb, 'queue'), updates);
-}
+    if(confirm('Tandai semua sebagai sudah dicetak?')) {
+        let updates = {};
+        pending.forEach(q => updates[q.id + '/status'] = 'printed');
+        if(Object.keys(updates).length > 0) {
+            await window.fbUpdate(window.getAppRef('queue'), updates);
+        }
+    }
+};
 
-window.rollbackQueue = async function rollbackQueue(id) {
-    if(!confirm('Kembalikan data ini ke antrean (belum diprint)?')) return;
-    await window.fbUpdate(window.fbRef(window.fbDb, `queue/${id}`), { status: 'pending', timestamp: Date.now() });
-}
+window.rollbackQueue = async (id) => {
+    if(confirm('Kembalikan ke antrean cetak?')) {
+        await window.fbUpdate(window.getAppRef(`queue/${id}`), { status: 'pending', timestamp: Date.now() });
+    }
+};
+
+window.downloadHistoryCSV = () => {
+    const printed = queuesData.filter(q => q.status === 'printed');
+    if(printed.length === 0) {
+        alert('Tidak ada riwayat cetak untuk didownload.');
+        return;
+    }
+    
+    // Determine all unique keys from dynamic_data across all printed items
+    let dynamicKeys = new Set();
+    printed.forEach(q => {
+        if(q.dynamic_data) {
+            Object.keys(q.dynamic_data).forEach(k => dynamicKeys.add(k));
+        }
+    });
+    const dynCols = Array.from(dynamicKeys);
+    
+    // Build CSV Header
+    let csvStr = 'Waktu Cetak,Template Piagam,Nama Peserta';
+    if (dynCols.length > 0) csvStr += ',' + dynCols.map(k => `"${k}"`).join(',');
+    csvStr += '\n';
+    
+    // Build CSV Rows
+    printed.forEach(q => {
+        const date = new Date(q.timestamp).toLocaleString('id-ID');
+        const tplId = q.template_id || 'default';
+        const tplName = tplId === 'default' ? 'Piagam Default' : (templatesMeta[tplId]?.name || tplId);
+        
+        let row = `"${date}","${tplName}","${q.participant_name || ''}"`;
+        if (dynCols.length > 0) {
+            dynCols.forEach(k => {
+                let val = '';
+                if(q.dynamic_data && q.dynamic_data[k]) val = q.dynamic_data[k];
+                row += `,"${val}"`;
+            });
+        }
+        csvStr += row + '\n';
+    });
+    
+    // Download
+    const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'Riwayat_Cetak_Piagam.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+};
 })();
 </script>
 </body>
