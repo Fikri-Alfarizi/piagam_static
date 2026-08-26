@@ -16,31 +16,21 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 
-// Router Guard: Pengecekan Login
-onAuthStateChanged(auth, (user) => {
-    const isLoginPage = window.location.pathname.endsWith('login.html');
-    
-    if (user) {
-        window.fbUser = user; // Expose user agar app.js tahu sudah auth
-        // Jika sudah login tapi ada di halaman login, pindahkan ke dashboard
-        if (isLoginPage) {
-            window.location.href = 'index.html';
-        }
-    } else {
-        // Jika belum login dan bukan di halaman login, pindahkan ke login
-        if (!isLoginPage) {
-            window.location.href = 'login.html';
-        }
-    }
-});
+// Fitur Login Dihapus: Selalu set fbUser aktif
+window.fbUser = { uid: 'guest', email: 'guest@piagamfast.com' };
 
-// Auth Functions
-window.fbLogin = (email, password) => {
-    return signInWithEmailAndPassword(auth, email, password);
+// Redirect halaman login.html ke index.html
+if (window.location.pathname.endsWith('login.html')) {
+    window.location.href = 'index.html';
+}
+
+// Auth Functions (no-op untuk kompatibilitas)
+window.fbLogin = async (email, password) => {
+    return true;
 };
 
-window.fbLogout = () => {
-    return signOut(auth);
+window.fbLogout = async () => {
+    window.location.href = 'index.html';
 };
 
 window.fbAuth = auth;

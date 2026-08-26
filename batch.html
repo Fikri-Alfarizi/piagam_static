@@ -102,22 +102,28 @@
         loadedFonts.add(fontFamily);
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', () => {
         // Wait until firebase-init is loaded and attached to window
         const checkFb = setInterval(async () => {
             if(window.fbDb && window.fbUser) {
                 clearInterval(checkFb);
                 const urlParams = new URLSearchParams(window.location.search);
                 const filterTemplate = urlParams.get('template');
+                const singleId = urlParams.get('id');
+                const idsParam = urlParams.get('ids');
+                const autoPrint = urlParams.get('autoprint') === '1';
+                const markPrinted = urlParams.get('markprinted') === '1';
                 
                 // Get Queues
                 const snapQueue = await window.fbGet(window.getAppRef('queue'));
                 const qData = snapQueue.val();
                 let pending = [];
                 if(qData) {
-                    const singleId = urlParams.get('id');
                     let allQs = Object.keys(qData).map(k => ({id: k, ...qData[k]}));
-                    if (singleId) {
+                    if (idsParam) {
+                        const targetIds = idsParam.split(',').map(s => s.trim()).filter(Boolean);
+                        pending = allQs.filter(q => targetIds.includes(q.id));
+                    } else if (singleId) {
                         pending = allQs.filter(q => q.id === singleId);
                     } else {
                         pending = allQs.filter(q => q.status === 'pending');
@@ -205,6 +211,25 @@
                     `;
                 });
                 container.innerHTML = html;
+
+                // Auto-mark printed if requested
+                if (markPrinted) {
+                    pending.forEach(q => {
+                        if (q.status === 'pending') {
+                            window.fbUpdate(window.getAppRef(`queue/${q.id}`), { status: 'printed', printed_at: Date.now() });
+                        }
+                    });
+                }
+
+                // Auto-trigger print if requested after fonts load
+                if (autoPrint) {
+                    const fontPromise = document.fonts ? document.fonts.ready : Promise.resolve();
+                    fontPromise.then(() => {
+                        setTimeout(() => {
+                            window.print();
+                        }, 300);
+                    });
+                }
             }
         }, 100);
     });

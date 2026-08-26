@@ -159,3 +159,49 @@ h1, h2, h3, h4 { margin-top: 0; margin-bottom: 16px; font-weight: 700; letter-sp
 .autocomplete-list { position: absolute; z-index: 99; top: calc(100% + 4px); left: 0; right: 0; background: white; border: 1px solid var(--border); border-radius: var(--radius); max-height: 250px; overflow-y: auto; list-style: none; padding: 4px; margin: 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
 .autocomplete-list li { padding: 10px 12px; cursor: pointer; border-radius: 4px; font-weight: 500; }
 .autocomplete-list li:hover, .autocomplete-list li.active { background: var(--secondary); color: var(--primary); }
+
+/* AI Smart Word Prediction Chips */
+.ai-suggestion-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+    margin-bottom: 8px;
+    align-items: center;
+}
+.ai-suggestion-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #4338ca;
+    background: #e0e7ff;
+    padding: 3px 8px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    user-select: none;
+}
+.ai-chip {
+    background: #f1f5f9;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+}
+.ai-chip:hover {
+    background: #3b82f6;
+    color: #ffffff;
+    border-color: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+.ai-chip:active {
+    transform: translateY(0);
+}

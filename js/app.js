@@ -136,7 +136,11 @@ async function submitQueue() {
         if(el.id === 'name') return; // Handled separately via participant_name
         const input = document.getElementById(`dyn_${el.id}`);
         if(input) {
-            dynamicData[el.id] = input.value.trim();
+            const val = input.value.trim();
+            dynamicData[el.id] = val;
+            if (val && typeof window.learnFromText === 'function') {
+                window.learnFromText(val);
+            }
         }
     });
     
@@ -287,55 +291,44 @@ function loadTemplateFields(templateId) {
         els.forEach(el => {
             if(el.id === 'name') return; // skip name as it is static at top
             const labelStr = escapeHTML(el.label || el.id);
-            
-            let isMapped = false;
-            let uniqueValues = [];
+            const mapCol = el.mapping || el.id;
 
-            if (el.mapping && typeof participants !== 'undefined') {
-                const mapCol = el.mapping;
-                uniqueValues = [...new Set(participants.map(p => p[mapCol]).filter(v => v))];
-                if (uniqueValues.length > 0) {
-                    isMapped = true;
-                }
-            }
-
-            if (isMapped) {
-                html += `
-                    <div class="form-group autocomplete-container">
-                        <label>${labelStr}</label>
-                        <input type="text" id="dyn_${el.id}" name="${el.id}" placeholder="Masukkan atau pilih ${labelStr}..." autocomplete="off">
-                        <ul id="dyn_list_${el.id}" class="autocomplete-list" style="display:none;"></ul>
-                    </div>
-                `;
-                autocompleteSetupList.push({ id: el.id, values: uniqueValues });
-            } else {
-                html += `
-                    <div class="form-group">
-                        <label>${labelStr}</label>
-                        <input type="text" id="dyn_${el.id}" name="${el.id}" placeholder="Masukkan ${labelStr}..." autocomplete="off">
-                    </div>
-                `;
-            }
+            html += `
+                <div class="form-group autocomplete-container">
+                    <label>${labelStr}</label>
+                    <input type="text" id="dyn_${el.id}" name="${el.id}" placeholder="Masukkan atau pilih ${labelStr}..." autocomplete="off">
+                    <div id="ai_bar_${el.id}" class="ai-suggestion-bar" style="display:none;"></div>
+                    <ul id="dyn_list_${el.id}" class="autocomplete-list" style="display:none;"></ul>
+                </div>
+            `;
+            autocompleteSetupList.push({ id: el.id, mapCol: mapCol });
         });
         
         dynContainer.innerHTML = html;
 
-        // Setup Autocomplete Handlers
+        // Setup Autocomplete & AI Suggestion Handlers
         autocompleteSetupList.forEach(item => {
             const input = document.getElementById(`dyn_${item.id}`);
             const list = document.getElementById(`dyn_list_${item.id}`);
-            if(!input || !list) return;
+            const barId = `ai_bar_${item.id}`;
+            if(!input) return;
 
             let activeIdx = -1;
 
             const doDynSearch = (val) => {
-                list.innerHTML = '';
+                if(list) list.innerHTML = '';
                 activeIdx = -1;
-                // If empty, show all options! This simulates a dropdown.
-                const valLower = (val || '').toLowerCase();
-                let matches = item.values.filter(v => v.toLowerCase().includes(valLower)).slice(0, 20);
                 
-                if(matches.length > 0) {
+                // Get fresh unique values from participants for this column
+                let uniqueValues = [];
+                if (typeof participants !== 'undefined' && participants && participants.length > 0) {
+                    uniqueValues = [...new Set(participants.map(p => p[item.mapCol]).filter(v => v !== null && v !== undefined && v !== ''))];
+                }
+
+                const valLower = (val || '').toLowerCase();
+                let matches = uniqueValues.filter(v => v.toString().toLowerCase().includes(valLower)).slice(0, 20);
+                
+                if(list && matches.length > 0) {
                     matches.forEach((v) => {
                         const li = document.createElement('li');
                         li.innerHTML = `<span>${escapeHTML(v)}</span>`;
@@ -343,32 +336,44 @@ function loadTemplateFields(templateId) {
                             e.stopPropagation();
                             input.value = v;
                             list.style.display = 'none';
+                            updateAiSuggestionBar(`dyn_${item.id}`, barId);
                         };
                         list.appendChild(li);
                     });
                     list.style.display = 'block';
-                } else {
+                } else if(list) {
                     list.style.display = 'none';
                 }
+
+                // Update AI Suggestion Bar
+                updateAiSuggestionBar(`dyn_${item.id}`, barId);
             };
 
             input.addEventListener('input', function() { doDynSearch(this.value); });
             input.addEventListener('focus', function() { doDynSearch(this.value); });
             input.addEventListener('click', function(e) { e.stopPropagation(); doDynSearch(this.value); });
             input.addEventListener('keydown', function(e) {
-                let items = list.getElementsByTagName('li');
-                if (e.key === 'ArrowDown') { 
+                let items = list ? list.getElementsByTagName('li') : [];
+                if (e.key === 'ArrowDown' && list && list.style.display === 'block') { 
                     activeIdx++; if(activeIdx >= items.length) activeIdx = 0; 
                     for(let i=0; i<items.length; i++) items[i].classList.remove('active');
                     if(items[activeIdx]) items[activeIdx].classList.add('active');
                 }
-                else if (e.key === 'ArrowUp') { 
+                else if (e.key === 'ArrowUp' && list && list.style.display === 'block') { 
                     activeIdx--; if(activeIdx < 0) activeIdx = items.length - 1; 
                     for(let i=0; i<items.length; i++) items[i].classList.remove('active');
                     if(items[activeIdx]) items[activeIdx].classList.add('active');
                 }
+                else if (e.key === 'Tab' && (!list || list.style.display !== 'block')) {
+                    // Tab key completes top AI suggestion if available
+                    const predictions = predictNextWords(this.value);
+                    if (predictions && predictions.length > 0) {
+                        e.preventDefault();
+                        applyAiSuggestion(`dyn_${item.id}`, barId, predictions[0]);
+                    }
+                }
                 else if (e.key === 'Enter') { 
-                    if(activeIdx > -1 && list.style.display === 'block') { 
+                    if(activeIdx > -1 && list && list.style.display === 'block') { 
                         e.preventDefault(); 
                         items[activeIdx].click(); 
                     } 
@@ -376,12 +381,16 @@ function loadTemplateFields(templateId) {
             });
 
             document.addEventListener('click', function(e) {
-                if(e.target !== input) list.style.display = 'none';
+                if(e.target !== input) {
+                    if (list) list.style.display = 'none';
+                    const bar = document.getElementById(barId);
+                    if (bar) bar.style.display = 'none';
+                }
             });
         });
         
         // Handle auto-fill if participant is already selected or typed
-        fillDynamicFromParticipant(searchInput.value);
+        fillDynamicFromParticipant(searchInput ? searchInput.value : '');
     });
 }
 
@@ -396,7 +405,7 @@ function fillDynamicFromParticipant(name) {
             if(input) {
                 // Read from explicit mapping if exists, otherwise fallback to matching el.id
                 const mapCol = el.mapping || el.id;
-                if(pMatched[mapCol] !== undefined) {
+                if(pMatched[mapCol] !== undefined && pMatched[mapCol] !== null) {
                     input.value = pMatched[mapCol];
                 } else if (el.id === 'sekolah' && pMatched.asal_sekolah) {
                     // Legacy fallback
@@ -408,4 +417,159 @@ function fillDynamicFromParticipant(name) {
         });
     }
 }
+
+// ==========================================
+// AI ADAPTIVE LEARNING & WORD PREDICTION ENGINE
+// ==========================================
+const DEFAULT_AI_VOCAB = [
+    "JUARA 1", "JUARA 2", "JUARA 3", "JUARA HARAPAN 1", "JUARA HARAPAN 2",
+    "PRACADET A", "PRACADET B", "CADET A", "CADET B", "JUNIOR", "SENIOR",
+    "PUTRA", "PUTRI", "INDIVIDU", "BEREGU", "PEMULA", "PRESTASI",
+    "U45", "U51", "U55", "U60", "FEATHER", "BANTAM", "FLY", "HEAVY"
+];
+
+let aiDict = {
+    words: {},
+    bigrams: {}
+};
+
+// Initialize AI Dictionary with default vocabulary
+DEFAULT_AI_VOCAB.forEach(v => {
+    aiDict.words[v] = 5;
+});
+
+// Sync AI Dictionary with Firebase in Realtime
+const checkFbAi = setInterval(() => {
+    if(window.fbDb && window.fbUser) {
+        clearInterval(checkFbAi);
+        window.fbOnValue(window.fbRef(window.fbDb, 'settings/learned_dictionary'), (snap) => {
+            const data = snap.val();
+            if (data) {
+                if (data.words) aiDict.words = { ...aiDict.words, ...data.words };
+                if (data.bigrams) aiDict.bigrams = { ...aiDict.bigrams, ...data.bigrams };
+            }
+        });
+    }
+}, 50);
+
+window.learnFromText = async function(text) {
+    if (!text || typeof text !== 'string') return;
+    const str = text.trim();
+    if (!str) return;
+
+    const tokens = str.split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return;
+
+    let updated = false;
+
+    // Learn whole phrase if short
+    if (tokens.length > 1 && tokens.length <= 4) {
+        const phrase = str.toUpperCase();
+        aiDict.words[phrase] = (aiDict.words[phrase] || 0) + 2;
+        updated = true;
+    }
+
+    // Learn individual words & bigrams
+    for (let i = 0; i < tokens.length; i++) {
+        const w = tokens[i].toUpperCase();
+        aiDict.words[w] = (aiDict.words[w] || 0) + 1;
+
+        if (i < tokens.length - 1) {
+            const nextW = tokens[i + 1].toUpperCase();
+            if (!aiDict.bigrams[w]) aiDict.bigrams[w] = {};
+            aiDict.bigrams[w][nextW] = (aiDict.bigrams[w][nextW] || 0) + 1;
+        }
+        updated = true;
+    }
+
+    if (updated && window.fbDb) {
+        try {
+            await window.fbSet(window.fbRef(window.fbDb, 'settings/learned_dictionary'), aiDict);
+        } catch (e) {
+            console.warn("AI Learn save failed:", e);
+        }
+    }
+};
+
+window.predictNextWords = function(currentInputVal) {
+    const text = (currentInputVal || '').trimStart();
+    
+    // Case 1: Input is empty -> return top starting words/phrases
+    if (!text) {
+        return Object.keys(aiDict.words)
+            .sort((a, b) => (aiDict.words[b] || 0) - (aiDict.words[a] || 0))
+            .slice(0, 5);
+    }
+
+    const tokens = text.split(/\s+/);
+    const hasTrailingSpace = currentInputVal.endsWith(' ');
+    
+    if (hasTrailingSpace) {
+        // User just finished typing a word
+        const lastWord = tokens[tokens.length - 1].toUpperCase();
+        
+        if (aiDict.bigrams[lastWord]) {
+            const nextMap = aiDict.bigrams[lastWord];
+            const sortedBigrams = Object.keys(nextMap).sort((a, b) => nextMap[b] - nextMap[a]);
+            if (sortedBigrams.length > 0) {
+                return sortedBigrams.slice(0, 5);
+            }
+        }
+        
+        return Object.keys(aiDict.words)
+            .filter(w => w !== lastWord)
+            .sort((a, b) => (aiDict.words[b] || 0) - (aiDict.words[a] || 0))
+            .slice(0, 5);
+    } else {
+        // User is currently typing a partial word
+        const partial = tokens[tokens.length - 1].toUpperCase();
+        return Object.keys(aiDict.words)
+            .filter(w => w.startsWith(partial) && w !== partial)
+            .sort((a, b) => (aiDict.words[b] || 0) - (aiDict.words[a] || 0))
+            .slice(0, 5);
+    }
+};
+
+window.updateAiSuggestionBar = function(inputId, barId) {
+    const input = document.getElementById(inputId);
+    const bar = document.getElementById(barId);
+    if (!input || !bar) return;
+
+    const predictions = predictNextWords(input.value);
+    if (!predictions || predictions.length === 0) {
+        bar.style.display = 'none';
+        return;
+    }
+
+    let chipsHtml = `<span class="ai-suggestion-label">💡 AI:</span>`;
+    predictions.forEach(word => {
+        chipsHtml += `<span class="ai-chip" onclick="applyAiSuggestion('${inputId}', '${barId}', '${escapeHTML(word)}')">+ ${escapeHTML(word)}</span>`;
+    });
+    bar.innerHTML = chipsHtml;
+    bar.style.display = 'flex';
+};
+
+window.applyAiSuggestion = function(inputId, barId, suggestedWord) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    let val = input.value;
+    const hasTrailingSpace = val.endsWith(' ');
+    
+    if (!val.trim()) {
+        input.value = suggestedWord + ' ';
+    } else if (hasTrailingSpace) {
+        input.value = val + suggestedWord + ' ';
+    } else {
+        const lastSpaceIdx = val.lastIndexOf(' ');
+        if (lastSpaceIdx === -1) {
+            input.value = suggestedWord + ' ';
+        } else {
+            input.value = val.substring(0, lastSpaceIdx + 1) + suggestedWord + ' ';
+        }
+    }
+
+    input.focus();
+    updateAiSuggestionBar(inputId, barId);
+};
 

@@ -33,7 +33,6 @@
                 <a href="import.html" id="nav-import">Import</a>
                 <a href="queue.html" id="nav-queue">Antrean</a>
                 <a href="setting.html" id="nav-setting">Setting</a>
-                <a href="#" onclick="window.fbLogout(); return false;" style="color: #dc2828; margin-top: 20px;">🚪 Keluar</a>
             </nav>
         </aside>
         <main class="main-content">
@@ -68,14 +67,17 @@
         </label>
     </div>
 
-    <button type="button" class="btn btn-primary" id="btnAnalyze" style="width: 100%; padding: 14px; font-size: 15px;">✨ Analisis dengan AI</button>
+    <div style="display:flex; gap:12px; margin-top:16px; flex-wrap:wrap;">
+        <button type="button" class="btn btn-primary" id="btnAnalyze" style="flex:1; padding: 14px; font-size: 15px;">✨ Analisis dengan AI</button>
+        <button type="button" class="btn btn-secondary" id="btnManual" style="flex:1; padding: 14px; font-size: 15px;">📋 Pemetaan Manual (Tanpa AI)</button>
+    </div>
     
     <div id="apiErrorMsg" style="margin-top:16px; color:#dc2828; background:#fef2f2; padding:12px; border-radius:6px; border:1px solid #fecaca; display:none; font-size:13px;"></div>
 </div>
 
 <div class="card" id="stage2" style="display:none;">
-    <h2 style="margin-bottom:8px;">Verifikasi AI Mapping</h2>
-    <p class="text-muted">Berikut adalah tebakan pemetaan kolom. Periksa, ubah jika ada yang kurang tepat, lalu klik Import.</p>
+    <h2 style="margin-bottom:8px;">Verifikasi Mapping Kolom</h2>
+    <p class="text-muted">Berikut adalah tebakan pemetaan kolom. Periksa, sesuaikan jika ada yang kurang tepat, lalu klik Import.</p>
     
     <div style="overflow-x: auto;">
         <table class="mapping-table" id="mappingTable">
@@ -112,7 +114,6 @@
     </script>
 
 <script>
-// GEMINI API KEY kini disimpan di localStorage untuk keamanan
 const MODEL_NAME = "gemini-1.5-flash";
 
 function setGeminiKey() {
@@ -126,7 +127,7 @@ function setGeminiKey() {
 
 let participantColumns = [];
 let parsedHeaders = [];
-let parsedData = []; // Data tanpa header
+let parsedData = [];
 let activeMode = 'upload';
 
 // Listeners untuk UI Tabs
@@ -164,53 +165,78 @@ const checkFb = setInterval(() => {
     }
 }, 50);
 
-// FUNGSI UTAMA ANALISA AI
-document.getElementById('btnAnalyze').addEventListener('click', async () => {
-    const btn = document.getElementById('btnAnalyze');
-    const errBox = document.getElementById('apiErrorMsg');
-    errBox.style.display = 'none';
+// SMART RULE-BASED AUTO-MATCHER
+function smartAutoMatch(header, dbColumns) {
+    if (!header) return 'NEW_COLUMN';
+    const norm = header.toLowerCase().trim();
     
+    // Abaikan kolom nomor urut
+    if (/^(no|nomor|#|num|no\.|no_urut|nr)$/i.test(norm)) return 'IGNORE';
+
+    // 1. Cocokkan persis dengan ID atau Label Database
+    for (let c of dbColumns) {
+        if (c.id.toLowerCase() === norm || c.label.toLowerCase() === norm) {
+            return c.id;
+        }
+    }
+
+    // 2. Kata Kunci Alias
+    const aliases = {
+        name: ['nama', 'name', 'atlit', 'atlet', 'peserta', 'fullname', 'siswa', 'pemain'],
+        asal_sekolah: ['sekolah', 'asal', 'kontingen', 'instansi', 'klub', 'club', 'utusan', 'daerah', 'pt', 'univ'],
+        kategori: ['kategori', 'category', 'juara', 'peringkat', 'kelas', 'tanding', 'nomor', 'cabang'],
+        sabuk: ['sabuk', 'belt', 'kyu', 'dan', 'tingkat'],
+        gender: ['gender', 'jk', 'jenis kelamin', 'sex', 'kelamin']
+    };
+
+    for (let key in aliases) {
+        if (aliases[key].some(alias => norm.includes(alias))) {
+            const found = dbColumns.find(c => c.id === key || c.id.includes(key));
+            if (found) return found.id;
+        }
+    }
+
+    // 3. Pencocokan Substring
+    for (let c of dbColumns) {
+        const cLabelNorm = c.label.toLowerCase();
+        if (norm.includes(cLabelNorm) || cLabelNorm.includes(norm)) {
+            return c.id;
+        }
+    }
+
+    return 'NEW_COLUMN';
+}
+
+// EKSTRAKSI RAW ROWS DARI FILE ATAU PASTE
+async function extractRawRows() {
     let rawRows = [];
 
-    // 1. Ekstraksi Data sesuai Mode
     if (activeMode === 'upload') {
         const fileInput = document.getElementById('excelFile');
-        if(!fileInput.files.length) return alert('Pilih file Excel/CSV terlebih dahulu!');
-        
-        btn.innerHTML = '<span class="loader"></span> Membaca File Excel...';
-        btn.disabled = true;
-        
-        try {
-            const file = fileInput.files[0];
-            const buffer = await file.arrayBuffer();
-            const workbook = XLSX.read(buffer, { type: 'array' });
-            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-            rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-        } catch(e) {
-            btn.innerHTML = '✨ Analisis dengan AI';
-            btn.disabled = false;
-            return alert('Gagal membaca file Excel. Pastikan formatnya benar.');
+        if(!fileInput.files.length) {
+            alert('Pilih file Excel/CSV terlebih dahulu!');
+            return null;
         }
-
+        const file = fileInput.files[0];
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
     } else {
         const txt = document.getElementById('rawTextArea').value.trim();
-        if(!txt) return alert('Kotak teks masih kosong. Silakan paste data terlebih dahulu!');
-        
-        btn.innerHTML = '<span class="loader"></span> Menganalisa Teks...';
-        btn.disabled = true;
-        
-        // Coba deteksi separator secara otomatis (Tab, Koma, atau Pipe)
+        if(!txt) {
+            alert('Kotak teks masih kosong. Silakan paste data terlebih dahulu!');
+            return null;
+        }
         const lines = txt.split('\n').filter(l => l.trim().length > 0);
-        let separator = '\t'; // default tab
+        let separator = '\t';
         if(lines.length > 0) {
             if(lines[0].includes('\t')) separator = '\t';
             else if(lines[0].includes('|')) separator = '|';
             else if(lines[0].includes(',')) separator = ',';
         }
-        
         rawRows = lines.map(line => line.split(separator === '\t' ? /\t/ : separator).map(c => c.trim()));
         
-        // Jika checkbox "Tidak ada header" dicentang, tambahkan header generik di baris pertama
         if (document.getElementById('chkNoHeader').checked && rawRows.length > 0) {
             const numCols = rawRows[0].length;
             const genericHeader = Array.from({length: numCols}, (_, i) => `Kolom Data ${i+1}`);
@@ -218,93 +244,141 @@ document.getElementById('btnAnalyze').addEventListener('click', async () => {
         }
     }
 
-    // 2. Membersihkan Baris Kosong
     const cleanRows = rawRows.filter(r => r && r.length > 0 && r.some(c => c !== undefined && c !== ''));
     if(cleanRows.length < 2) {
+        alert('Data tidak cukup. Butuh baris judul/header dan minimal 1 baris isi data.');
+        return null;
+    }
+
+    return cleanRows;
+}
+
+// 1. MODUS ANALISIS AI
+document.getElementById('btnAnalyze').addEventListener('click', async () => {
+    const btn = document.getElementById('btnAnalyze');
+    const errBox = document.getElementById('apiErrorMsg');
+    errBox.style.display = 'none';
+
+    btn.innerHTML = '<span class="loader"></span> Membaca Data...';
+    btn.disabled = true;
+
+    try {
+        const cleanRows = await extractRawRows();
+        if (!cleanRows) {
+            btn.innerHTML = '✨ Analisis dengan AI';
+            btn.disabled = false;
+            return;
+        }
+
+        parsedHeaders = cleanRows[0].map((h, i) => String(h || `Kolom ${i+1}`).trim());
+        parsedData = cleanRows.slice(1);
+        const sampleRows = cleanRows.slice(1, 4);
+
+        btn.innerHTML = '<span class="loader"></span> AI Menganalisa (Gemini)...';
+
+        const dbColsFormat = participantColumns.map(c => `ID: "${c.id}" (Label: "${c.label}")`).join("\n");
+        const sampleFormat = sampleRows.map(row => {
+            let obj = {};
+            parsedHeaders.forEach((h, i) => obj[h] = row[i] !== undefined ? String(row[i]) : '');
+            return obj;
+        });
+
+        const promptText = `
+        Kamu adalah AI Data Matching Expert untuk Sistem Piagam.
+        Tugas: Petakan setiap kolom dari data masukan pengguna ke ID Kolom Database yang paling tepat.
+
+        Daftar Kolom Database yang Tersedia:
+        ${dbColsFormat}
+
+        Kolom Masukan Pengguna:
+        [${parsedHeaders.join(", ")}]
+
+        Contoh Data Masukan:
+        ${JSON.stringify(sampleFormat, null, 2)}
+
+        Aturan Pemetaan:
+        1. Cocokkan nama kolom masukan (atau contoh isinya) dengan ID Kolom Database yang paling sesuai (misal "Nama Atlet" -> "name", "Asal Kontingen" -> "asal_sekolah", "Kategori Juara" -> "kategori").
+        2. Gunakan ID kolom Database sebagai nilai balasan jika cocok (misal: "name", "asal_sekolah").
+        3. Jika kolom tidak cocok dengan kolom database yang ada tetapi berisi data bermanfaat, berikan nilai: "NEW_COLUMN".
+        4. Jika kolom hanya berisi nomor urut (#, No, Nomor), berikan nilai: "IGNORE".
+        5. HANYA kembalikan JSON Object murni dengan format { "Nama Kolom Input": "ID_Database_Atau_NEW_COLUMN_Atau_IGNORE" }. Tanpa penjelasan dan tanpa kode markdown.
+        `;
+
+        let aiMapping = {};
+
+        try {
+            const apiKey = localStorage.getItem('gemini_api_key');
+            if (!apiKey) {
+                throw new Error('API Key belum diatur');
+            }
+            
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+            });
+
+            const resData = await response.json();
+            if (!response.ok) {
+                throw new Error(resData.error?.message || "Terjadi kesalahan pada server AI");
+            }
+            
+            const rawText = resData.candidates[0].content.parts[0].text;
+            const jsonStr = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+            aiMapping = JSON.parse(jsonStr);
+
+        } catch(err) {
+            console.warn("AI API fallback:", err);
+            errBox.innerText = "Info AI: " + err.message + ". Menggunakan auto-mapping cerdas lokal.";
+            errBox.style.display = 'block';
+            
+            parsedHeaders.forEach(h => {
+                aiMapping[h] = smartAutoMatch(h, participantColumns);
+            });
+        }
+
+        renderMappingTable(aiMapping, sampleRows[0]);
+        document.getElementById('stage1').style.display = 'none';
+        document.getElementById('stage2').style.display = 'block';
+
+    } catch (e) {
+        alert('Gagal memproses data: ' + e.message);
+    } finally {
         btn.innerHTML = '✨ Analisis dengan AI';
         btn.disabled = false;
-        return alert('Data tidak cukup. Butuh baris judul/header dan minimal 1 baris isi data.');
     }
+});
 
-    // 3. Persiapan Data
-    parsedHeaders = cleanRows[0].map((h, i) => String(h || `Kolom ${i+1}`).trim());
-    parsedData = cleanRows.slice(1);
-    const sampleRows = cleanRows.slice(1, 4);
+// 2. MODUS PEMETAAN MANUAL (TANPA AI)
+document.getElementById('btnManual').addEventListener('click', async () => {
+    const btn = document.getElementById('btnManual');
+    btn.innerHTML = '<span class="loader"></span> Memproses...';
+    btn.disabled = true;
 
-    btn.innerHTML = '<span class="loader"></span> AI Menganalisa (Gemini API)...';
-
-    // 4. Proses Gemini API
-    const dbCols = participantColumns.map(c => c.label).join(", ");
-    const excelJsonSample = sampleRows.map(row => {
-        let obj = {};
-        parsedHeaders.forEach((h, i) => obj[h] = row[i] !== undefined ? row[i] : '');
-        return obj;
-    });
-
-    const promptText = `
-    Kamu adalah Data Analis cerdas.
-    Tugas: Cocokkan kolom input dari pengguna ke kolom Database kami.
-    
-    Database memiliki kolom: [${dbCols}]
-    Input pengguna memiliki header: [${parsedHeaders.join(", ")}]
-    
-    Sample Data Input:
-    ${JSON.stringify(excelJsonSample, null, 2)}
-    
-    Instruksi:
-    1. Pasangkan nama kolom Input dengan kolom Database yang paling masuk akal (Misal: "Nama Atlit" atau "M. HASYN" -> "Nama Lengkap").
-    2. Jika kolom Input tidak punya kecocokan di Database, atur nilainya: "NEW_COLUMN".
-    3. Abaikan kolom nomor urut atau kosong dengan nilai: "IGNORE".
-    4. BALAS HANYA DENGAN FORMAT JSON MURNI TANPA MARKDOWN!
-    `;
-
-    let aiMapping = {};
-    
     try {
-        const apiKey = localStorage.getItem('gemini_api_key');
-        if (!apiKey) {
-            alert('Kunci API Gemini belum diatur. Silakan klik tombol "Set API Key" di atas.');
-            throw new Error('API Key kosong');
-        }
-        
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`;
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-        });
+        const cleanRows = await extractRawRows();
+        if (!cleanRows) return;
 
-        const resData = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(resData.error?.message || "Terjadi kesalahan pada server AI");
-        }
-        
-        const rawText = resData.candidates[0].content.parts[0].text;
-        const jsonStr = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-        aiMapping = JSON.parse(jsonStr);
+        parsedHeaders = cleanRows[0].map((h, i) => String(h || `Kolom ${i+1}`).trim());
+        parsedData = cleanRows.slice(1);
+        const sampleRow = cleanRows[1] || [];
 
-    } catch(err) {
-        console.warn("AI API gagal atau terjadi limit. Menggunakan fallback manual.", err);
-        errBox.innerText = "Koneksi AI Gagal: " + err.message + ". Menggunakan auto-mapping manual Javascript.";
-        errBox.style.display = 'block';
-        
-        // Fallback Manual Javascript sederhana jika API limit/gagal
+        let manualMapping = {};
         parsedHeaders.forEach(h => {
-            const low = h.toLowerCase();
-            if (low.includes('nama') || low.includes('name')) aiMapping[h] = 'name';
-            else if (low.includes('sekolah') || low.includes('kontingen') || low.includes('asal')) aiMapping[h] = 'asal_sekolah';
-            else aiMapping[h] = 'NEW_COLUMN';
+            manualMapping[h] = smartAutoMatch(h, participantColumns);
         });
-    }
 
-    // 5. Render Hasil
-    renderMappingTable(aiMapping, sampleRows[0]);
-    document.getElementById('stage1').style.display = 'none';
-    document.getElementById('stage2').style.display = 'block';
-    
-    btn.innerHTML = '✨ Analisis dengan AI';
-    btn.disabled = false;
+        renderMappingTable(manualMapping, sampleRow);
+        document.getElementById('stage1').style.display = 'none';
+        document.getElementById('stage2').style.display = 'block';
+        document.getElementById('apiErrorMsg').style.display = 'none';
+
+    } catch (e) {
+        alert('Gagal membaca data manual: ' + e.message);
+    } finally {
+        btn.innerHTML = '📋 Pemetaan Manual (Tanpa AI)';
+    }
 });
 
 // FUNGSI RENDER TABEL

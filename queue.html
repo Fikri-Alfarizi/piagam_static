@@ -17,34 +17,43 @@
                 <a href="import.html" id="nav-import">Import</a>
                 <a href="queue.html" id="nav-queue">Antrean</a>
                 <a href="setting.html" id="nav-setting">Setting</a>
-                <a href="#" onclick="window.fbLogout(); return false;" style="color: #dc2828; margin-top: 20px;">🚪 Keluar</a>
             </nav>
         </aside>
         <main class="main-content">
             <div class="container">
 
 <div class="card">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>Daftar Antrean Print (Pending)</h2>
-        <div style="display:flex; gap:8px;">
-            <button onclick="window.open('batch.html', '_blank')" class="btn btn-primary btn-sm">Cetak Masal Semua</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+            <h2 style="margin:0;">Daftar Antrean Print (Pending)</h2>
+            <small style="color:var(--text-muted);">Pilih & klaim antrean untuk Printer 1, 2, atau 3. Tekan <kbd>P</kbd> atau <kbd>Space</kbd> untuk cetak otomatis top item.</small>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <select id="filter-template-select" style="padding:6px 10px; border-radius:6px; border:1px solid var(--border); font-size:13px;">
+                <option value="all">Semua Template</option>
+            </select>
+            <button onclick="printSelected(true)" class="btn btn-primary btn-sm">🖨️ Cetak Terpilih (Auto-Mark)</button>
+            <button onclick="markSelectedPrinted()" class="btn btn-secondary btn-sm">✓ Tandai Terpilih</button>
+            <button onclick="window.open('batch.html', '_blank')" class="btn btn-secondary btn-sm">Cetak Semua</button>
             <button onclick="clearQueue()" class="btn btn-danger btn-sm">Hapus Semua</button>
         </div>
     </div>
     <table class="table mt-2">
         <thead>
             <tr>
-                <th>Nama</th>
+                <th style="width:30px;"><input type="checkbox" id="select-all-pending" onclick="toggleSelectAllPending(this)"></th>
+                <th>Nama Peserta</th>
                 <th>Detail Data</th>
-                <th style="text-align:right;">Aksi</th>
+                <th style="text-align:right;">Aksi Quick Print</th>
             </tr>
         </thead>
         <tbody id="pending-tbody">
-            <tr><td colspan="3" style="text-align:center;">Memuat antrean dari Firebase...</td></tr>
+            <tr><td colspan="4" style="text-align:center;">Memuat antrean dari Firebase...</td></tr>
         </tbody>
     </table>
-    <div class="mt-2">
-        <button onclick="markAllPrinted()" class="btn btn-secondary">Tandai Semua Sudah Di-Print</button>
+    <div class="mt-2" style="display:flex; justify-content:space-between; align-items:center;">
+        <span id="pending-info-count" style="font-size:13px; color:var(--text-muted);">Total pending: 0</span>
+        <button onclick="markAllPrinted()" class="btn btn-secondary btn-sm">Tandai Semua Sudah Di-Print</button>
     </div>
 </div>
 
@@ -56,7 +65,7 @@
     <table class="table mt-2">
         <thead>
             <tr>
-                <th>Nama</th>
+                <th>Nama Peserta</th>
                 <th>Detail Data</th>
                 <th style="text-align:right;">Aksi</th>
             </tr>
@@ -84,6 +93,7 @@
 (() => {
 let queuesData = [];
 let templatesMeta = {};
+let currentFilterTpl = 'all';
 
 // Get templates meta to show friendly names
 const checkFb = setInterval(() => {
@@ -92,7 +102,8 @@ const checkFb = setInterval(() => {
         
         window.fbOnValue(window.getAppRef('settings/templates_meta'), (snap) => {
             templatesMeta = snap.val() || {};
-            renderQueues(); // re-render if template name changes or loads
+            updateTemplateFilterOptions();
+            renderQueues();
         });
         
         window.fbOnValue(window.getAppRef('queue'), (snapshot) => {
@@ -101,11 +112,33 @@ const checkFb = setInterval(() => {
             queuesData.sort((a,b) => b.timestamp - a.timestamp);
             renderQueues();
         });
+
+        const filterSelect = document.getElementById('filter-template-select');
+        if (filterSelect) {
+            filterSelect.addEventListener('change', (e) => {
+                currentFilterTpl = e.target.value;
+                renderQueues();
+            });
+        }
     }
 }, 50);
 
+function updateTemplateFilterOptions() {
+    const filterSelect = document.getElementById('filter-template-select');
+    if (!filterSelect) return;
+    let opts = '<option value="all">Semua Template</option><option value="default">Piagam Default</option>';
+    Object.keys(templatesMeta).forEach(k => {
+        opts += `<option value="${k}">${escapeHTML(templatesMeta[k].name)}</option>`;
+    });
+    filterSelect.innerHTML = opts;
+    filterSelect.value = currentFilterTpl;
+}
+
 function renderQueues() {
-    const pending = queuesData.filter(q => q.status === 'pending');
+    let pending = queuesData.filter(q => q.status === 'pending');
+    if (currentFilterTpl !== 'all') {
+        pending = pending.filter(q => (q.template_id || 'default') === currentFilterTpl);
+    }
     const printed = queuesData.filter(q => q.status === 'printed');
     
     function formatDynamicData(q) {
@@ -121,19 +154,21 @@ function renderQueues() {
         const tplName = tplId === 'default' ? 'Piagam Default' : (templatesMeta[tplId]?.name || 'Template Baru');
         return `
         <tr id="queue-${q.id}">
+            <td><input type="checkbox" class="pending-chk" value="${q.id}"></td>
             <td>
-                ${escapeHTML(q.participant_name)}
+                <b>${escapeHTML(q.participant_name)}</b>
                 <span class="badge" style="background:#34495e; color:#fff; font-size:10px; margin-left:8px; padding:3px 6px; vertical-align:middle;">
                     ${escapeHTML(tplName)}
                 </span>
             </td>
             <td><small>${formatDynamicData(q)}</small></td>
-            <td style="text-align:right; min-width: 150px;">
-                <button onclick="window.open('batch.html?id=${q.id}', '_blank')" class="btn btn-primary btn-sm">Print</button>
+            <td style="text-align:right; min-width: 220px;">
+                <button onclick="printSingleAndMark('${q.id}')" class="btn btn-primary btn-sm">🖨️ Cetak (Auto-Mark)</button>
+                <button onclick="window.open('batch.html?id=${q.id}', '_blank')" class="btn btn-secondary btn-sm">Preview</button>
                 <button onclick="deleteQueue('${q.id}')" class="btn btn-danger btn-sm">Hapus</button>
             </td>
         </tr>
-    `}).join('') : '<tr><td colspan="3" style="text-align:center; color:#999;">Antrean kosong.</td></tr>';
+    `}).join('') : '<tr><td colspan="4" style="text-align:center; color:#999;">Antrean kosong.</td></tr>';
     
     const printedHtml = printed.length ? printed.map(q => {
         const tplId = q.template_id || 'default';
@@ -157,7 +192,50 @@ function renderQueues() {
     
     document.getElementById('pending-tbody').innerHTML = pendingHtml;
     document.getElementById('printed-tbody').innerHTML = printedHtml;
+    const countSpan = document.getElementById('pending-info-count');
+    if (countSpan) countSpan.innerText = `Total pending: ${pending.length}`;
 }
+
+window.toggleSelectAllPending = (master) => {
+    const chks = document.querySelectorAll('.pending-chk');
+    chks.forEach(c => c.checked = master.checked);
+};
+
+window.printSelected = (autoMark = true) => {
+    const chks = document.querySelectorAll('.pending-chk:checked');
+    let ids = Array.from(chks).map(c => c.value);
+    if (ids.length === 0) {
+        // Fallback: pick all visible pending items
+        let pending = queuesData.filter(q => q.status === 'pending');
+        if (currentFilterTpl !== 'all') {
+            pending = pending.filter(q => (q.template_id || 'default') === currentFilterTpl);
+        }
+        ids = pending.map(q => q.id);
+    }
+    if (ids.length === 0) {
+        alert('Tidak ada antrean pending yang dipilih.');
+        return;
+    }
+    const url = `batch.html?ids=${ids.join(',')}&autoprint=1${autoMark ? '&markprinted=1' : ''}`;
+    window.open(url, '_blank');
+};
+
+window.markSelectedPrinted = async () => {
+    const chks = document.querySelectorAll('.pending-chk:checked');
+    const ids = Array.from(chks).map(c => c.value);
+    if (ids.length === 0) {
+        alert('Pilih setidaknya satu antrean untuk ditandai.');
+        return;
+    }
+    let updates = {};
+    ids.forEach(id => updates[`${id}/status`] = 'printed');
+    await window.fbUpdate(window.getAppRef('queue'), updates);
+};
+
+window.printSingleAndMark = async (id) => {
+    const url = `batch.html?id=${id}&autoprint=1&markprinted=1`;
+    window.open(url, '_blank');
+};
 
 window.deleteQueue = async (id) => {
     if(confirm('Yakin hapus dari antrean?')) {
@@ -190,6 +268,24 @@ window.rollbackQueue = async (id) => {
         await window.fbUpdate(window.getAppRef(`queue/${id}`), { status: 'pending', timestamp: Date.now() });
     }
 };
+
+// Keyboard Shortcuts for Printer Operator
+document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'p' || e.key === 'P' || e.code === 'Space') {
+        e.preventDefault();
+        // Print top pending item
+        let pending = queuesData.filter(q => q.status === 'pending');
+        if (currentFilterTpl !== 'all') {
+            pending = pending.filter(q => (q.template_id || 'default') === currentFilterTpl);
+        }
+        if (pending.length > 0) {
+            printSingleAndMark(pending[0].id);
+        } else {
+            alert('Tidak ada antrean pending untuk dicetak.');
+        }
+    }
+});
 
 window.downloadHistoryCSV = () => {
     const printed = queuesData.filter(q => q.status === 'printed');
