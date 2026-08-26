@@ -185,18 +185,38 @@ document.addEventListener('keydown', (e) => {
 // Tournament Manager + Template List
 document.addEventListener('DOMContentLoaded', () => {
     const sidebarBrand = document.querySelector('.sidebar-brand');
-    if (!sidebarBrand) return;
+    const mainContainer = document.querySelector('.main-content .container');
 
-    const tContainer = document.createElement('div');
-    tContainer.style.cssText = 'padding:10px 20px; background:rgba(0,0,0,0.05); border-bottom:1px solid var(--border);';
-    tContainer.innerHTML = `
-        <label style="font-size:10px; text-transform:uppercase; font-weight:bold; color:var(--text-muted); display:block; margin-bottom:4px;">Pilih Turnamen</label>
-        <select id="tourney-select" style="width:100%; padding:6px; border-radius:4px; margin-bottom:8px; font-size:12px; border:1px solid var(--border);"></select>
-        <button id="btn-new-tourney" class="btn btn-secondary btn-sm" style="width:100%; font-size:11px; padding:6px;">+ Turnamen Baru</button>
-    `;
-    sidebarBrand.insertAdjacentElement('afterend', tContainer);
+    if (sidebarBrand) {
+        const tContainer = document.createElement('div');
+        tContainer.style.cssText = 'padding:10px 20px; background:rgba(0,0,0,0.05); border-bottom:1px solid var(--border);';
+        tContainer.innerHTML = `
+            <label style="font-size:10px; text-transform:uppercase; font-weight:bold; color:var(--text-muted); display:block; margin-bottom:4px;">Pilih Turnamen</label>
+            <select id="tourney-select" style="width:100%; padding:6px; border-radius:4px; margin-bottom:8px; font-size:12px; border:1px solid var(--border);"></select>
+            <button id="btn-new-tourney" class="btn btn-secondary btn-sm" style="width:100%; font-size:11px; padding:6px;">+ Turnamen Baru</button>
+        `;
+        sidebarBrand.insertAdjacentElement('afterend', tContainer);
+    }
+
+    if (mainContainer && !document.getElementById('mobile-tourney-card') && window.innerWidth <= 768) {
+        const mobileBox = document.createElement('div');
+        mobileBox.id = 'mobile-tourney-card';
+        mobileBox.style.cssText = 'margin-bottom:12px; padding:10px 14px; background:#fff; border-radius:10px; border:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:8px; box-shadow:0 2px 6px rgba(0,0,0,0.03);';
+        mobileBox.innerHTML = `
+            <div style="display:flex; align-items:center; gap:6px; flex:1;">
+                <span style="font-size:16px;">🏆</span>
+                <div style="flex:1;">
+                    <label style="font-size:9px; text-transform:uppercase; font-weight:800; color:var(--text-muted); display:block; margin-bottom:1px;">Turnamen Aktif</label>
+                    <select id="tourney-select-mobile" style="width:100%; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:700; border:1px solid var(--border); background:#f9fafb; outline:none;"></select>
+                </div>
+            </div>
+            <button id="btn-new-tourney-mobile" class="btn btn-secondary btn-sm" style="font-size:11px; padding:6px 10px; width:auto; margin:0;">+ Baru</button>
+        `;
+        mainContainer.prepend(mobileBox);
+    }
 
     const select = document.getElementById('tourney-select');
+    const selectMobile = document.getElementById('tourney-select-mobile');
     const active = localStorage.getItem('active_tournament') || 'default';
     
     const checkFbTourney = setInterval(() => {
@@ -206,19 +226,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const meta = snap.val() || {};
                 let opts = '<option value="default">Turnamen Default (Awal)</option>';
                 Object.keys(meta).forEach(k => { opts += `<option value="${k}">${escapeHTML(meta[k].name)}</option>`; });
-                select.innerHTML = opts;
-                select.value = active;
+                if (select) { select.innerHTML = opts; select.value = active; }
+                if (selectMobile) { selectMobile.innerHTML = opts; selectMobile.value = active; }
             });
-            select.addEventListener('change', (e) => { localStorage.setItem('active_tournament', e.target.value); window.location.reload(); });
-            document.getElementById('btn-new-tourney').addEventListener('click', async () => {
+
+            const onTourneyChange = (e) => {
+                localStorage.setItem('active_tournament', e.target.value);
+                window.location.reload();
+            };
+            if (select) select.addEventListener('change', onTourneyChange);
+            if (selectMobile) selectMobile.addEventListener('change', onTourneyChange);
+
+            const onNewTourney = async () => {
                 const name = prompt('Masukkan Nama Turnamen Baru:');
                 if (!name) return;
                 const id = 't_' + Date.now();
                 await window.fbSet(window.fbRef(window.fbDb, `tournaments_meta/${id}`), { name: name, created_at: Date.now() });
                 localStorage.setItem('active_tournament', id);
                 window.location.reload();
-            });
-            
+            };
+            const btnNew = document.getElementById('btn-new-tourney');
+            const btnNewMobile = document.getElementById('btn-new-tourney-mobile');
+            if (btnNew) btnNew.addEventListener('click', onNewTourney);
+            if (btnNewMobile) btnNewMobile.addEventListener('click', onNewTourney);
+
             // Load template list for Dashboard
             const templateSelect = document.getElementById('template_select');
             if (templateSelect) {

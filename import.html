@@ -39,15 +39,15 @@
             <div class="container">
 
 <div class="card" id="stage1">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
         <h2 style="margin:0;">AI Smart Import</h2>
-        <button class="btn btn-secondary btn-sm" onclick="setGeminiKey()">🔑 Set API Key</button>
+        <button class="btn btn-secondary btn-sm" onclick="setGeminiKey()" style="white-space:nowrap;">🔑 Set API Key</button>
     </div>
     <p class="text-muted">Masukkan data Anda via File Excel/CSV atau Paste Teks Bebas. AI akan memetakannya ke Database secara otomatis.</p>
     
-    <div class="tab-buttons">
-        <button class="tab-btn active" id="tabUpload">Upload File (Excel/CSV)</button>
-        <button class="tab-btn" id="tabPaste">Paste Teks Bebas</button>
+    <div class="tab-buttons" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+        <button class="tab-btn active" id="tabUpload" style="white-space:nowrap;">Upload File (Excel/CSV)</button>
+        <button class="tab-btn" id="tabPaste" style="white-space:nowrap;">Paste Teks Bebas</button>
     </div>
 
     <!-- Mode 1: Upload -->
@@ -59,7 +59,7 @@
     <!-- Mode 2: Paste -->
     <div id="modePaste" style="display:none; padding: 16px; background:var(--secondary); border-radius:var(--radius); border:1px solid var(--border); margin-bottom: 16px;">
         <label style="display:block; margin-bottom:8px; font-weight:600; font-size:13px;">Paste Data (Dari WA, Word, Excel, dsb)</label>
-        <textarea id="rawTextArea" rows="6" placeholder="Budi Santoso	SMPN 1	Juara 1&#10;Andi Wijaya	SDN 2	Juara 2" style="width:100%; padding:10px; border-radius:6px; border:1px solid #ccc; font-family:monospace;"></textarea>
+        <textarea id="rawTextArea" rows="6" placeholder="Budi Santoso&#9;SMPN 1&#9;Juara 1&#10;Andi Wijaya&#9;SDN 2&#9;Juara 2" style="width:100%; padding:10px; border-radius:6px; border:1px solid #ccc; font-family:monospace;"></textarea>
         
         <label style="display:flex; align-items:center; gap:8px; margin-top:12px; font-size:13px; font-weight:500; cursor:pointer; padding: 8px; background: #fff; border-radius: 4px; border: 1px solid #e5e7eb;">
             <input type="checkbox" id="chkNoHeader">
@@ -68,8 +68,8 @@
     </div>
 
     <div style="display:flex; gap:12px; margin-top:16px; flex-wrap:wrap;">
-        <button type="button" class="btn btn-primary" id="btnAnalyze" style="flex:1; padding: 14px; font-size: 15px;">✨ Analisis dengan AI</button>
-        <button type="button" class="btn btn-secondary" id="btnManual" style="flex:1; padding: 14px; font-size: 15px;">📋 Pemetaan Manual (Tanpa AI)</button>
+        <button type="button" class="btn btn-primary" id="btnAnalyze" style="flex:1; min-width:180px; padding: 14px; font-size: 15px;">✨ Analisis dengan AI</button>
+        <button type="button" class="btn btn-secondary" id="btnManual" style="flex:1; min-width:180px; padding: 14px; font-size: 15px;">📋 Pemetaan Manual</button>
     </div>
     
     <div id="apiErrorMsg" style="margin-top:16px; color:#dc2828; background:#fef2f2; padding:12px; border-radius:6px; border:1px solid #fecaca; display:none; font-size:13px;"></div>
@@ -92,7 +92,7 @@
         </table>
     </div>
 
-    <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+    <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px; flex-wrap:wrap;">
         <button class="btn btn-secondary" id="btnCancel">Batalkan</button>
         <button class="btn btn-primary" id="btnImport">📥 Import Semua Data</button>
     </div>
