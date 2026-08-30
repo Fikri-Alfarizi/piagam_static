@@ -305,10 +305,14 @@ let isLoaded = false;
 function updatePreview(field) {
     const el = document.getElementById('preview_' + field);
     if (!el) return;
+    const align = document.getElementById(field + '_align').value;
     el.style.left = document.getElementById(field + '_x').value + 'px';
     el.style.top = document.getElementById(field + '_y').value + 'px';
     el.style.fontSize = document.getElementById(field + '_size').value + 'px';
-    el.style.textAlign = document.getElementById(field + '_align').value;
+    el.style.textAlign = align;
+    el.style.transform = align === 'center' ? 'translateX(-50%)' : (align === 'right' ? 'translateX(-100%)' : 'none');
+    el.style.transformOrigin = 'center top';
+    el.style.whiteSpace = 'nowrap';
     el.style.fontWeight = document.getElementById(field + '_bold').checked ? 'bold' : 'normal';
     
     const font = document.getElementById(field + '_font').value;

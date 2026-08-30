@@ -302,8 +302,8 @@
 // 1. STATE & CONSTANTS
 // ==========================================
 const DEFAULT_ELEMENTS = [
-    { id: 'name', label: 'Nama Peserta', preview_text: 'Budi Santoso (Contoh)', x: 300, y: 320, size: 28, align: 'center', font: 'Arial', color: '#000000', bold: true, mapping: '' },
-    { id: 'category', label: 'Juara / Kategori', preview_text: 'Juara 1 Kumite Bebas', x: 350, y: 380, size: 24, align: 'center', font: 'Arial', color: '#000000', bold: false, mapping: '' }
+    { id: 'name', label: 'Nama Peserta', preview_text: 'Budi Santoso (Contoh)', x: 561, y: 320, size: 28, align: 'center', font: 'Arial', color: '#000000', bold: true, mapping: '' },
+    { id: 'category', label: 'Juara / Kategori', preview_text: 'Juara 1 Kumite Bebas', x: 561, y: 380, size: 24, align: 'center', font: 'Arial', color: '#000000', bold: false, mapping: '' }
 ];
 
 const AVAILABLE_FONTS = [
@@ -460,6 +460,8 @@ function renderPreview() {
         div.style.top = `${el.y}px`;
         div.style.fontSize = `${el.size}px`;
         div.style.textAlign = el.align || 'center';
+        div.style.transform = (el.align === 'center') ? 'translateX(-50%)' : ((el.align === 'right') ? 'translateX(-100%)' : 'none');
+        div.style.transformOrigin = 'center top';
         div.style.fontWeight = el.bold ? 'bold' : 'normal';
         div.style.color = el.color || '#000000';
         div.style.fontFamily = `'${el.font}', sans-serif`;
@@ -516,8 +518,8 @@ document.getElementById('btn-add-element').addEventListener('click', () => {
         id: id,
         label: name,
         preview_text: name,
-        x: 50,
-        y: 50 + (elements.length * 40),
+        x: 561,
+        y: 100 + (elements.length * 40),
         size: 24,
         align: 'center',
         font: 'Arial',
