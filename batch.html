@@ -70,7 +70,7 @@
 
         .field-name, .field-category, .field-nomor {
             position: absolute;
-            width: 100%;
+            white-space: nowrap;
         }
     </style>
 </head>
@@ -185,7 +185,7 @@
                             if (!text) return;
                             const fb = elSetting.font_family === 'Times New Roman' ? 'serif' : 'sans-serif';
                             loadGoogleFont(elSetting.font_family);
-                            const style = `position:absolute; width:100%; left:${elSetting.x_pos}px; top:${elSetting.y_pos}px; font-size:${elSetting.font_size}px; text-align:${elSetting.align}; font-weight:${elSetting.is_bold?'bold':'normal'}; color:${elSetting.color}; font-family:'${elSetting.font_family}',${fb};`;
+                            const style = `position:absolute; left:${elSetting.x_pos}px; top:${elSetting.y_pos}px; font-size:${elSetting.font_size}px; text-align:${elSetting.align}; font-weight:${elSetting.is_bold?'bold':'normal'}; color:${elSetting.color}; font-family:'${elSetting.font_family}',${fb}; white-space:nowrap;`;
                             elementsHtml += `<div style="${style}">${escapeHTML(text)}</div>`;
                         });
                     } else {
@@ -197,7 +197,7 @@
                             const s = settings[key];
                             const fb = s.font_family === 'Times New Roman' ? 'serif' : 'sans-serif';
                             loadGoogleFont(s.font_family);
-                            const style = `position:absolute; width:100%; left:${s.x_pos}px; top:${s.y_pos}px; font-size:${s.font_size}px; text-align:${s.align}; font-weight:${s.is_bold?'bold':'normal'}; color:${s.color}; font-family:'${s.font_family}',${fb};`;
+                            const style = `position:absolute; left:${s.x_pos}px; top:${s.y_pos}px; font-size:${s.font_size}px; text-align:${s.align}; font-weight:${s.is_bold?'bold':'normal'}; color:${s.color}; font-family:'${s.font_family}',${fb}; white-space:nowrap;`;
                             elementsHtml += `<div style="${style}">${escapeHTML(text)}</div>`;
                         });
                     }
